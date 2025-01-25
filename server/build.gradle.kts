@@ -18,19 +18,6 @@ application {
     applicationDefaultJvmArgs = listOf("-Dio.ktor.development=$isDevelopment")
 }
 
-tasks.withType<ProcessResources> {
-    val wasmOutput = file("../web/build/dist/wasmJs/productionExecutable")
-    if (wasmOutput.exists()) {
-        inputs.dir(wasmOutput)
-    }
-
-    from("../web/build/dist/wasmJs/productionExecutable") {
-        into("web")
-        include("**/*")
-    }
-    duplicatesStrategy = DuplicatesStrategy.WARN
-}
-
 dependencies {
     implementation("io.ktor:ktor-server-core")
     implementation("io.ktor:ktor-server-resources")
