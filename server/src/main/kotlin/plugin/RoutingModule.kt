@@ -2,13 +2,11 @@ package com.unde.server.plugin
 
 import com.unde.server.constants.Format
 import com.unde.server.constants.Route
-import com.unde.server.route.registerRoutes
-import io.ktor.http.*
+import com.unde.server.router.registerRoutes
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.http.content.*
 import io.ktor.server.resources.*
-import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.webjars.*
 
@@ -19,9 +17,12 @@ fun Application.configureRouting() {
     }
     install(ShutDownUrl.ApplicationCallPlugin) {
         // The URL that will be intercepted (you can also use the application.conf's ktor.deployment.shutdown.url key)
-        shutDownUrl = Route.EXIT_ROUTE
+        shutDownUrl = Route.EXIT_ROUTE // POST request
         // A function that will be executed to get the exit code of the process
-        exitCodeSupplier = { 0 } // ApplicationCall.() -> Int
+        exitCodeSupplier = {
+            println("Shutting down the JVM.")
+            0
+        } // ApplicationCall.() -> Int
     }
     routing {
         // Static plugin. Try to access `/static/index.html`
@@ -31,7 +32,6 @@ fun Application.configureRouting() {
             preCompressed(CompressedFileType.GZIP)
         }
         staticResources(Route.DEFAULT_ROOT_URL, Route.DEFAULT_WEB_ROUTE)
-
         registerRoutes()
     }
 }
