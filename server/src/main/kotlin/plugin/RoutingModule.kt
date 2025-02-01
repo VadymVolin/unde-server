@@ -8,15 +8,11 @@ import io.ktor.server.engine.*
 import io.ktor.server.http.content.*
 import io.ktor.server.resources.*
 import io.ktor.server.routing.*
-import io.ktor.server.webjars.*
 
 fun Application.configureRouting() {
     install(Resources)
-    install(Webjars) {
-        path = Route.DEFAULT_STATIC_ROUTE //defaults to /webjars
-    }
     install(ShutDownUrl.ApplicationCallPlugin) {
-        // The URL that will be intercepted (you can also use the application.conf's ktor.deployment.shutdown.url key)
+        // The URL that will be intercepted (you can also use the application.config's ktor.deployment.shutdown.url key)
         shutDownUrl = Route.EXIT_ROUTE // POST request
         // A function that will be executed to get the exit code of the process
         exitCodeSupplier = {
