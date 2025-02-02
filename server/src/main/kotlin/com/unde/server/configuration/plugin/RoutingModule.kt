@@ -1,4 +1,4 @@
-package com.unde.server.plugin
+package com.unde.server.configuration.plugin
 
 import com.unde.server.constants.Format
 import com.unde.server.constants.Route

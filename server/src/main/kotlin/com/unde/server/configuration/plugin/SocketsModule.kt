@@ -1,4 +1,4 @@
-package com.unde.server.plugin
+package com.unde.server.configuration.plugin
 
 import io.ktor.serialization.kotlinx.*
 import io.ktor.server.application.*
