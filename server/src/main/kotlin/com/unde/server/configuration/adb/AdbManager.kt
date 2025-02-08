@@ -20,12 +20,12 @@ object AdbManager {
         "adb: no devices/emulators found",
     )
 
-    private fun createAdbTask(): Unit = try {
+    private fun createAdbTask() = try {
         val devices = getConnectedDevices()
         if (devices.isEmpty()) throw IllegalStateException("No devices found")
         setupAdbReverse(devices)
     } catch (e: Exception) {
-        LOGGER.error("Error setting up ADB reverse: ${e.message}")
+        LOGGER.warn("Error setting up ADB reverse: ${e.message}")
     }
 
     private fun getConnectedDevices(): List<String> {
@@ -37,11 +37,11 @@ object AdbManager {
                 .filter { it.contains("device") && !it.contains("unauthorized") }
                 .map { line ->
                     return@map line.split(" ").firstOrNull { it.isNotBlank() } ?: ""
-                }.filter { it.isNotBlank() }
+                }.filter { it.isNotBlank() }.toList()
         }
         LOGGER.info("Adb devices: $devices")
         process.waitFor()
-        return devices.toList()
+        return devices
     }
 
     private fun setupAdbReverse(devices: List<String> = emptyList()) {
@@ -52,7 +52,7 @@ object AdbManager {
             LOGGER.info("Trying to setup adb reverse for device: $it")
             val result = process.inputStream.bufferedReader().use(BufferedReader::readText)
             if (adbErrors.contains(result)) {
-                LOGGER.error("ADB reverse was not installed because of [$result]")
+                LOGGER.warn("ADB reverse was not installed because of [$result]")
                 throw IllegalStateException("ADB reverse was not installed because of [$result]")
             }
             // Wait for the process to finish
@@ -62,6 +62,7 @@ object AdbManager {
     }
 
     fun setup() {
+        LOGGER.info("Setup Adb manager")
         timer = timer(TIMER_NAME, true, RIGHT_NOW_TIME_MS, NEXT_ATTEMPT_DELAY_MS) { createAdbTask() }
     }
 
