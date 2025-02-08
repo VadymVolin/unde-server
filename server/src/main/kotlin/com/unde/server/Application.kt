@@ -5,7 +5,7 @@ import com.unde.server.configuration.plugin.*
 import io.ktor.server.application.*
 
 fun main(args: Array<String>) {
-    AdbManager.setupAdbReverse()
+    AdbManager.setup()
     io.ktor.server.netty.EngineMain.main(args)
 }
 

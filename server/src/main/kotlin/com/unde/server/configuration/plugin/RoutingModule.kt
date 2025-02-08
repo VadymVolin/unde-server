@@ -1,5 +1,6 @@
 package com.unde.server.configuration.plugin
 
+import com.unde.server.configuration.adb.AdbManager
 import com.unde.server.constants.Format
 import com.unde.server.constants.Route
 import com.unde.server.router.registerRoutes
@@ -16,6 +17,7 @@ fun Application.configureRouting() {
         shutDownUrl = Route.EXIT_ROUTE // POST request
         // A function that will be executed to get the exit code of the process
         exitCodeSupplier = {
+            AdbManager.stop()
             println("Shutting down the JVM.")
             0
         } // ApplicationCall.() -> Int
