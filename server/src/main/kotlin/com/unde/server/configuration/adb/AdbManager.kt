@@ -66,6 +66,9 @@ object AdbManager {
         timer = timer(TIMER_NAME, true, RIGHT_NOW_TIME_MS, NEXT_ATTEMPT_DELAY_MS) { createAdbTask() }
     }
 
-    fun stop() = timer.cancel()
+    fun stop() {
+        LOGGER.info("Release manager and resources")
+        timer.cancel()
+    }
 
 }
