@@ -57,7 +57,7 @@ object AdbManager {
             }
             // Wait for the process to finish
             val exitCode = process.waitFor()
-            LOGGER.info("ADB Reverse result: $result | $exitCode")
+            LOGGER.info("ADB Reverse result: $result | exitCode: $exitCode")
         }
     }
 

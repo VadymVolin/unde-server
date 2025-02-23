@@ -5,7 +5,7 @@ import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 
 fun Routing.networkSocket() {
-    webSocket("/ws/network") { // websocketSession
+    webSocket("/ws") { // websocketSession
         for (frame in incoming) {
             if (frame is Frame.Text) {
                 val text = frame.readText()
