@@ -7,17 +7,15 @@ import com.unde.server.router.registerRoutes
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.http.content.*
-import io.ktor.server.resources.*
 import io.ktor.server.routing.*
 
 fun Application.configureRouting() {
-    install(Resources)
     install(ShutDownUrl.ApplicationCallPlugin) {
         // The URL that will be intercepted (you can also use the application.config's ktor.deployment.shutdown.url key)
         shutDownUrl = Route.EXIT_ROUTE // POST request
         // A function that will be executed to get the exit code of the process
         exitCodeSupplier = {
-            AdbManager.stop()
+            AdbManager.release()
             println("Shutting down the JVM.")
             0
         } // ApplicationCall.() -> Int
@@ -29,7 +27,6 @@ fun Application.configureRouting() {
             enableAutoHeadResponse()
             preCompressed(CompressedFileType.GZIP)
         }
-        staticResources(Route.DEFAULT_ROOT_URL, Route.DEFAULT_WEB_ROUTE)
         registerRoutes()
     }
 }
