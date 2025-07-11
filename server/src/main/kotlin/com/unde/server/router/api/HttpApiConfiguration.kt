@@ -4,7 +4,7 @@ import com.unde.server.router.api.ping.ping
 import com.unde.server.router.api.ping.test
 import io.ktor.server.routing.*
 
-fun Routing.setupHttpConfiguration() {
+fun Routing.setupHttpRoutingConfiguration() {
     route("/api") {
         ping()
         test()
