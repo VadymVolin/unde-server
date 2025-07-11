@@ -19,7 +19,7 @@ object AdbManager {
         "adb: no devices/emulators found",
     )
 
-    private val LOGGER = KtorSimpleLogger("com.unde.server.configuration.adb.AdbManager")
+    private val LOGGER = KtorSimpleLogger(javaClass.simpleName)
 
     internal fun setup(application: Application) {
         if (timer == null) {
