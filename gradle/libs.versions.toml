@@ -1,0 +1,38 @@
+[versions]
+kotlin-version = "2.2.0"
+ktor-version = "3.2.0"
+exposed-version = "0.58.0"
+h2-version = "2.3.232"
+kotlinx-html-version = "0.11.0"
+logback-version = "1.5.13"
+
+
+[libraries]
+ktor-server-core = { module = "io.ktor:ktor-server-core" }
+ktor-server-host-common = { module = "io.ktor:ktor-server-host-common" }
+ktor-server-call-loggin = { module = "io.ktor:ktor-server-call-logging" }
+ktor-server-content-negotiation = { module = "io.ktor:ktor-server-content-negotiation" }
+ktor-server-websockets = { module = "io.ktor:ktor-server-websockets" }
+ktor-server-html-builder = { module = "io.ktor:ktor-server-html-builder" }
+ktor-server-netty = { module = "io.ktor:ktor-server-netty" }
+ktor-server-config-yaml = { module = "io.ktor:ktor-server-config-yaml" }
+kotlin-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json" }
+kotlin-html = { group = "org.jetbrains.kotlinx", name = "kotlinx-html", version.ref = "kotlinx-html-version" }
+exposed-core = { module = "org.jetbrains.exposed:exposed-core", version.ref = "exposed-version" }
+exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "exposed-version" }
+h2 = { group = "com.h2database", name = "h2", version.ref = "h2-version" }
+logback = { group = "ch.qos.logback", name = "logback-classic", version.ref = "logback-version" }
+#test
+test-ktor-server-host = { module = "io.ktor:ktor-server-test-host" }
+kotlin-test-junit = { group = "org.jetbrains.kotlin", name = "kotlin-test-junit", version.ref = "kotlin-version" }
+
+
+[bundles]
+ktor = ["ktor-server-core", "ktor-server-host-common", "ktor-server-call-loggin", "ktor-server-content-negotiation", "ktor-server-websockets", "ktor-server-html-builder", "ktor-server-netty", "ktor-server-config-yaml"]
+
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin-version" }
+kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin-version" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin-version" }
+ktor-plugin = { id = "io.ktor.plugin", version.ref = "ktor-version" }

@@ -1,14 +1,7 @@
-val exposed_version: String by project
-val h2_version: String by project
-val kotlin_version: String by project
-val kotlinx_browser_version: String by project
-val kotlinx_html_version: String by project
-val logback_version: String by project
-
 plugins {
-    kotlin("jvm") version "2.1.0"
-    id("io.ktor.plugin") version "3.1.0"
-    id("org.jetbrains.kotlin.plugin.serialization") version "2.1.0"
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.ktor.plugin)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 application {
@@ -19,20 +12,17 @@ application {
 }
 
 dependencies {
-    implementation("io.ktor:ktor-server-core")
-    implementation("io.ktor:ktor-server-host-common")
-    implementation("io.ktor:ktor-server-call-logging")
-    implementation("io.ktor:ktor-server-content-negotiation")
-    implementation("io.ktor:ktor-serialization-kotlinx-json")
-    implementation("org.jetbrains.exposed:exposed-core:$exposed_version")
-    implementation("org.jetbrains.exposed:exposed-jdbc:$exposed_version")
-    implementation("com.h2database:h2:$h2_version")
-    implementation("io.ktor:ktor-server-websockets")
-    implementation("io.ktor:ktor-server-html-builder")
-    implementation("org.jetbrains.kotlinx:kotlinx-html:$kotlinx_html_version")
-    implementation("io.ktor:ktor-server-netty")
-    implementation("ch.qos.logback:logback-classic:$logback_version")
-    implementation("io.ktor:ktor-server-config-yaml")
-    testImplementation("io.ktor:ktor-server-test-host")
-    testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version")
+    implementation(libs.bundles.ktor)
+    implementation(libs.kotlin.serialization.kotlinx.json)
+    implementation(libs.kotlin.html)
+    // database
+    implementation(libs.exposed.core)
+    implementation(libs.exposed.jdbc)
+    // h2
+    implementation(libs.h2)
+    //
+    implementation(libs.logback)
+
+    testImplementation(libs.test.ktor.server.host)
+    testImplementation(libs.kotlin.test.junit)
 }
