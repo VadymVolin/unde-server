@@ -12,6 +12,5 @@ fun Application.configureSockets() {
         pingPeriod = 3.seconds
         timeout = 15.seconds
         maxFrameSize = Long.MAX_VALUE
-        masking = true
     }
 }

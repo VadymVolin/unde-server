@@ -1,67 +1,59 @@
 package com.unde.server.socket
 
 import com.unde.server.socket.model.WSMessage
-import io.ktor.server.websocket.DefaultWebSocketServerSession
+import io.ktor.server.websocket.*
+import io.ktor.util.logging.*
 import io.ktor.websocket.*
-import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.consumeEach
-import kotlinx.serialization.json.Json
+import kotlinx.coroutines.isActive
 
-internal class WSConnection (
+internal class WSConnection(
     val id: String,
     private val session: DefaultWebSocketServerSession,
-    private val onClose: (WSConnection) -> Unit
+    private val onDisconnect: (WSConnection) -> Unit
 ) {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val json = Json { classDiscriminator = "type" }
+    private val logger = KtorSimpleLogger(javaClass.simpleName)
 
-    fun start() {
-        scope.launch {
-            try {
-                session.incoming.consumeEach { frame ->
-                    if (frame is Frame.Text) {
-                        val message = frame.readText()
-                        println("[$id] Received: $message")
-
-                        val decoded = json.decodeFromString<WSMessage>(message)
-                        handleMessage(decoded)
-                    }
+    internal suspend fun connect() {
+        logger.info("The connection to device[$id] has been established")
+        try {
+            session.incoming.consumeEach { frame ->
+                if (frame is Frame.Text) {
+                    val message = frame.readText()
+                    logger.info("Message from device[$id] has been received: $message")
+//                        val decoded = json.decodeFromString<WSMessage>(message)
+//                        handleMessage(decoded)
                 }
-            } catch (e: Exception) {
-                println("[$id] Error: ${e.message}")
-            } finally {
-                println("[$id] Disconnected.")
-                cleanup()
             }
+        } catch (e: Exception) {
+            logger.info("Exception has been caught, device[$id]: ${e.message}")
+        } finally {
+            logger.info("Device[$id] has been disconnected")
+            onDisconnect(this@WSConnection)
         }
     }
 
-    suspend fun send(message: WSMessage) {
+    internal suspend fun send(message: WSMessage) {
         try {
             if (session.isActive) {
-                session.send(Frame.Text(json.encodeToString(WSMessage.serializer(), message)))
+//                session.send(Frame.Text(json.encodeToString(WSMessage.serializer(), message)))
             }
         } catch (e: Exception) {
-            println("[$id] Send error: ${e.message}")
+            logger.error("Cannot send message to device[$id]: ${e.message}")
         }
     }
 
     private fun handleMessage(msg: WSMessage) {
-        when (msg) {
-            is WSMessage.Command -> {
-                println("[$id] Command: ${msg.name}")
-                // Do something and respond
-                scope.launch {
-                    send(WSMessage.Response("ok", "Executed ${msg.name}"))
-                }
-            }
-
-            else -> println("[$id] Unhandled: $msg")
-        }
-    }
-
-    fun cleanup() {
-        scope.cancel()
-        onClose(this)
+//        when (msg) {
+//            is WSMessage.Command -> {
+//                println("[$id] Command: ${msg.name}")
+//                // Do something and respond
+//                scope.launch {
+//                    send(WSMessage.Response("ok", "Executed ${msg.name}"))
+//                }
+//            }
+//
+//            else -> println("[$id] Unhandled: $msg")
+//        }
     }
 }
