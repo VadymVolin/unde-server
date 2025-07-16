@@ -1,15 +1,25 @@
 package com.unde.server.socket.model
 
+import com.unde.server.constants.JsonToken
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonObject
 
 @Serializable
-internal sealed class WSMessage {
+internal sealed interface WSMessage {
     @Serializable
-    @SerialName("command")
-    data class Command(val name: String, val args: Map<String, String>) : WSMessage()
+    @SerialName(JsonToken.TYPE_NETWORK_TOKEN)
+    data class Network(val data: JsonObject) : WSMessage
 
     @Serializable
-    @SerialName("response")
-    data class Response(val status: String, val data: String) : WSMessage()
+    @SerialName(JsonToken.TYPE_DATABASE_TOKEN)
+    data class Database(val data: JsonObject) : WSMessage
+
+    @Serializable
+    @SerialName(JsonToken.TYPE_TELEMETRY_TOKEN)
+    data class Telemetry(val data: JsonObject) : WSMessage
+
+    @Serializable
+    @SerialName(JsonToken.TYPE_LOGCAT_TOKEN)
+    data class Logcat(val data: JsonObject) : WSMessage
 }

@@ -9,7 +9,7 @@ import io.ktor.server.engine.*
 import io.ktor.server.http.content.*
 import io.ktor.server.routing.*
 
-fun Application.configureRouting() {
+internal fun Application.configureRouting() {
     install(ShutDownUrl.ApplicationCallPlugin) {
         // The URL that will be intercepted (you can also use the application.config's ktor.deployment.shutdown.url key)
         shutDownUrl = Route.EXIT_ROUTE // POST request

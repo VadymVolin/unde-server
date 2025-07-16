@@ -4,7 +4,6 @@ import com.unde.server.socket.model.WSMessage
 
 internal object WSConnectionBroker {
     private val _connections = mutableMapOf<String, WSConnection>()
-    internal val connections: Map<String, WSConnection> = _connections
 
     internal fun register(connection: WSConnection) {
         _connections[connection.id] = connection

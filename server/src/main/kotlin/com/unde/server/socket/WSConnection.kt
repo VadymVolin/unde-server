@@ -1,11 +1,13 @@
 package com.unde.server.socket
 
+import com.unde.server.constants.JsonToken
 import com.unde.server.socket.model.WSMessage
 import io.ktor.server.websocket.*
 import io.ktor.util.logging.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.isActive
+import kotlinx.serialization.json.Json
 
 internal class WSConnection(
     val id: String,
@@ -14,16 +16,13 @@ internal class WSConnection(
 ) {
     private val logger = KtorSimpleLogger(javaClass.simpleName)
 
+    val json = Json { classDiscriminator = JsonToken.TYPE_TOKEN }
+
     internal suspend fun connect() {
         logger.info("The connection to device[$id] has been established")
         try {
             session.incoming.consumeEach { frame ->
-                if (frame is Frame.Text) {
-                    val message = frame.readText()
-                    logger.info("Message from device[$id] has been received: $message")
-//                        val decoded = json.decodeFromString<WSMessage>(message)
-//                        handleMessage(decoded)
-                }
+                handleMessage(frame)
             }
         } catch (e: Exception) {
             logger.info("Exception has been caught, device[$id]: ${e.message}")
@@ -43,17 +42,33 @@ internal class WSConnection(
         }
     }
 
-    private fun handleMessage(msg: WSMessage) {
-//        when (msg) {
-//            is WSMessage.Command -> {
-//                println("[$id] Command: ${msg.name}")
-//                // Do something and respond
-//                scope.launch {
-//                    send(WSMessage.Response("ok", "Executed ${msg.name}"))
-//                }
-//            }
-//
-//            else -> println("[$id] Unhandled: $msg")
-//        }
+    private fun handleMessage(frame: Frame) {
+        if (frame is Frame.Text) {
+            val text = frame.readText()
+            try {
+                val message = json.decodeFromString<WSMessage>(text)
+                logger.info("Message from device[$id] has been received: $message")
+                when (message) {
+                    is WSMessage.Network -> {
+                        logger.info("Received NETWORK message: ${message.data}")
+                        // handleNetwork(message.data)
+                    }
+                    is WSMessage.Telemetry -> {
+                        logger.info("Received TELEMETRY message: ${message.data}")
+                        // handleTelemetry(...)
+                    }
+                    is WSMessage.Logcat -> {
+                        logger.info("Received LOGCAT message: ${message.data}")
+                        // handleLogcat(...)
+                    }
+                    is WSMessage.Database -> {
+                        logger.info("Received DATABASE message: ${message.data}")
+                        // handleDatabase(...)
+                    }
+                }
+            } catch (e: Exception) {
+                logger.error("Failed to parse WSMessage: ${e.message}")
+            }
+        }
     }
 }
