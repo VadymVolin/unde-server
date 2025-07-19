@@ -49,21 +49,20 @@ internal class WSConnection(
                 val message = json.decodeFromString<WSMessage>(text)
                 logger.info("Message from device[$id] has been received: $message")
                 when (message) {
+                    is WSMessage.Command -> {
+                        logger.info("Received COMMAND message: ${message.data}")
+                    }
                     is WSMessage.Network -> {
                         logger.info("Received NETWORK message: ${message.data}")
-                        // handleNetwork(message.data)
                     }
                     is WSMessage.Telemetry -> {
                         logger.info("Received TELEMETRY message: ${message.data}")
-                        // handleTelemetry(...)
                     }
                     is WSMessage.Logcat -> {
                         logger.info("Received LOGCAT message: ${message.data}")
-                        // handleLogcat(...)
                     }
                     is WSMessage.Database -> {
                         logger.info("Received DATABASE message: ${message.data}")
-                        // handleDatabase(...)
                     }
                 }
             } catch (e: Exception) {

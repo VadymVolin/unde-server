@@ -8,6 +8,10 @@ import kotlinx.serialization.json.JsonObject
 @Serializable
 internal sealed interface WSMessage {
     @Serializable
+    @SerialName(JsonToken.TYPE_COMMAND_TOKEN)
+    data class Command(val data: JsonObject) : WSMessage
+
+    @Serializable
     @SerialName(JsonToken.TYPE_NETWORK_TOKEN)
     data class Network(val data: JsonObject) : WSMessage
 
