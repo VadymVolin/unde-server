@@ -5,8 +5,10 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 
+
 @Serializable
 internal sealed interface WSMessage {
+    //  TODO: CHECK HOW WE GENERATE JSONS, IT SEEMS TYPE TOKEN IS NOT SERIALIZED
     @Serializable
     @SerialName(JsonToken.TYPE_COMMAND_TOKEN)
     data class Command(val data: JsonObject) : WSMessage

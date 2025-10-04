@@ -3,6 +3,7 @@ package com.unde.server.constants
 internal object JsonToken {
     // type json token
     const val TYPE_TOKEN = "type"
+    const val RESULT_TOKEN = "result"
     // values
     const val TYPE_COMMAND_TOKEN = "command"
     const val TYPE_NETWORK_TOKEN = "network"

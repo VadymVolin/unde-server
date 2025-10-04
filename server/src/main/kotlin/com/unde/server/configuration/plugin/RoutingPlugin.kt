@@ -4,18 +4,21 @@ import com.unde.server.configuration.adb.AdbManager
 import com.unde.server.constants.Format
 import com.unde.server.constants.Route
 import com.unde.server.configuration.router.registerRoutes
+import com.unde.server.socket.WSConnectionBroker
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.http.content.*
 import io.ktor.server.routing.*
 
 internal fun Application.configureRouting() {
+    // TODO: check the future ktor version, currently there is an issue with shutdown url, ktor server is still active after it
     install(ShutDownUrl.ApplicationCallPlugin) {
         // The URL that will be intercepted (you can also use the application.config's ktor.deployment.shutdown.url key)
         shutDownUrl = Route.EXIT_ROUTE // POST request
         // A function that will be executed to get the exit code of the process
         exitCodeSupplier = {
             AdbManager.release()
+            WSConnectionBroker.release()
             println("Shutting down the JVM.")
             0
         } // ApplicationCall.() -> Int

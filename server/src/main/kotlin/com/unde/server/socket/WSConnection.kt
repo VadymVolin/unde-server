@@ -8,6 +8,8 @@ import io.ktor.websocket.*
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.isActive
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.encodeToJsonElement
 
 internal class WSConnection(
     val id: String,
@@ -21,6 +23,7 @@ internal class WSConnection(
     internal suspend fun connect() {
         logger.info("The connection to device[$id] has been established")
         try {
+            session.send(json.encodeToString(WSMessage.Command(JsonObject(mapOf(JsonToken.RESULT_TOKEN to Json.encodeToJsonElement("Connected successfully!"))))))
             session.incoming.consumeEach { frame ->
                 handleMessage(frame)
             }
@@ -35,7 +38,7 @@ internal class WSConnection(
     internal suspend fun send(message: WSMessage) {
         try {
             if (session.isActive) {
-//                session.send(Frame.Text(json.encodeToString(WSMessage.serializer(), message)))
+                session.send(Frame.Text(json.encodeToString(WSMessage.serializer(), message)))
             }
         } catch (e: Exception) {
             logger.error("Cannot send message to device[$id]: ${e.message}")
