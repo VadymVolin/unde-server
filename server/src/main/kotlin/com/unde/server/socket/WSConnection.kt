@@ -23,7 +23,7 @@ internal class WSConnection(
     internal suspend fun connect() {
         logger.info("The connection to device[$id] has been established")
         try {
-            session.send(json.encodeToString(WSMessage.Command(JsonObject(mapOf(JsonToken.RESULT_TOKEN to Json.encodeToJsonElement("Connected successfully!"))))))
+            session.send(Frame.Text(Json.encodeToString<WSMessage>(WSMessage.Command(JsonObject(mapOf(JsonToken.RESULT_TOKEN to Json.encodeToJsonElement("Connected successfully!")))))))
             session.incoming.consumeEach { frame ->
                 handleMessage(frame)
             }
@@ -50,7 +50,7 @@ internal class WSConnection(
             val text = frame.readText()
             try {
                 val message = json.decodeFromString<WSMessage>(text)
-                logger.info("Message from device[$id] has been received: $message")
+                logger.info("Message from device[$id] has been received: $text")
                 when (message) {
                     is WSMessage.Command -> {
                         logger.info("Received COMMAND message: ${message.data}")
