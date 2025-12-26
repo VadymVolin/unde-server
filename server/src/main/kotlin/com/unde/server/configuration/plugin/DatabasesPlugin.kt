@@ -2,7 +2,7 @@ package com.unde.server.configuration.plugin
 
 import io.ktor.server.application.*
 
-fun Application.configureDatabases() {
+internal fun Application.configureDatabases() {
 //    val database = Database.connect(
 //        url = "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1",
 //        user = "root",
