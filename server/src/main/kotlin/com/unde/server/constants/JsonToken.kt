@@ -10,6 +10,8 @@ internal object JsonToken {
     const val TYPE_DATABASE_TOKEN = "database"
     const val TYPE_TELEMETRY_TOKEN = "telemetry"
     const val TYPE_LOGCAT_TOKEN = "logcat"
+    const val TYPE_CONNECTIONS_LIST_TOKEN = "connections_list"
+    const val TYPE_SELECT_CONNECTION_TOKEN = "select_connection"
 
     // next...
 }

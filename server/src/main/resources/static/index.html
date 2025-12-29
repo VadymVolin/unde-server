@@ -1,15 +1,121 @@
 <!doctype html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Document</title>
+    <title>Unde Server Dashboard</title>
     <link rel="stylesheet" href="/css/style.css">
-    <script src="/js/script.js"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 </head>
+
 <body>
-<button onclick="exit()">exit</button>
+    <div id="app">
+        <header class="header">
+            <h1>Unde Server Dashboard</h1>
+            <div class="header-controls">
+                <div class="connection-selector">
+                    <label for="connection-select">Connection:</label>
+                    <select id="connection-select" v-model="selectedConnection" @change="onConnectionChange">
+                        <option value="">Select connection...</option>
+                        <option v-for="conn in connections" :key="conn" :value="conn">{{ conn }}</option>
+                    </select>
+                </div>
+                <div class="ws-status" :class="{ connected: wsConnected, disconnected: !wsConnected }">
+                    <span class="status-dot"></span>
+                    <span>{{ wsConnected ? 'Connected' : 'Disconnected' }}</span>
+                </div>
+                <button class="exit-btn" @click="exitServer">Exit</button>
+            </div>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab" :class="{ active: activeTab === 'network' }" @click="activeTab = 'network'">
+                Network
+            </button>
+            <button class="tab" :class="{ active: activeTab === 'database' }" @click="activeTab = 'database'">
+                Database
+            </button>
+            <button class="tab" :class="{ active: activeTab === 'logcat' }" @click="activeTab = 'logcat'">
+                Logcat
+            </button>
+        </nav>
+
+        <main class="content">
+            <!-- Network Tab -->
+            <div v-if="activeTab === 'network'" class="tab-content">
+                <div v-if="networkData.length === 0" class="empty-state">
+                    No network requests yet. Connect a device and make some requests.
+                </div>
+                <div v-else class="network-list">
+                    <div v-for="(item, index) in networkData" :key="index" class="network-item">
+                        <div class="network-header" @click="toggleExpand(index)">
+                            <span class="method" :class="item.request.method.toLowerCase()">{{ item.request.method
+                                }}</span>
+                            <span class="url">{{ item.request.url }}</span>
+                            <span class="status" :class="getStatusClass(item.response.code)">{{ item.response.code
+                                }}</span>
+                            <span class="duration">{{ item.response.durationMs }}ms</span>
+                            <span class="expand-icon">{{ expandedItems.has(index) ? '▼' : '▶' }}</span>
+                        </div>
+                        <div v-if="expandedItems.has(index)" class="network-details">
+                            <div class="detail-section">
+                                <h4>Request</h4>
+                                <div class="detail-row">
+                                    <strong>URL:</strong> {{ item.request.url }}
+                                </div>
+                                <div class="detail-row">
+                                    <strong>Method:</strong> {{ item.request.method }}
+                                </div>
+                                <div class="detail-row">
+                                    <strong>Headers:</strong>
+                                    <pre>{{ formatHeaders(item.request.headers) }}</pre>
+                                </div>
+                                <div v-if="item.request.body" class="detail-row">
+                                    <strong>Body:</strong>
+                                    <pre>{{ item.request.body }}</pre>
+                                </div>
+                            </div>
+                            <div class="detail-section">
+                                <h4>Response</h4>
+                                <div class="detail-row">
+                                    <strong>Status:</strong> {{ item.response.code }} {{ item.response.message }}
+                                </div>
+                                <div class="detail-row">
+                                    <strong>Protocol:</strong> {{ item.response.protocol }}
+                                </div>
+                                <div class="detail-row">
+                                    <strong>Headers:</strong>
+                                    <pre>{{ formatHeaders(item.response.headers) }}</pre>
+                                </div>
+                                <div v-if="item.response.body" class="detail-row">
+                                    <strong>Body:</strong>
+                                    <pre>{{ item.response.body }}</pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Database Tab -->
+            <div v-if="activeTab === 'database'" class="tab-content">
+                <div class="empty-state">
+                    Database traces coming soon...
+                </div>
+            </div>
+
+            <!-- Logcat Tab -->
+            <div v-if="activeTab === 'logcat'" class="tab-content">
+                <div class="empty-state">
+                    Logcat traces coming soon...
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/js/app.js"></script>
 </body>
+
 </html>
