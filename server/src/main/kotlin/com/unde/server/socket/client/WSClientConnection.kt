@@ -23,9 +23,7 @@ internal class WSClientConnection(
         logger.info("Client UI connection [$id] established")
         try {
             // Send initial connections list
-            val connections = WSLibraryConnectionBroker.getActiveConnections()
-            send(WSClientMessage.ConnectionsList(connections))
-            
+            send(WSClientMessage.ConnectionsList(WSLibraryConnectionBroker.getActiveConnections()))
             // Handle incoming messages
             session.incoming.consumeEach(::handleMessage)
         } catch (e: Exception) {
@@ -55,7 +53,7 @@ internal class WSClientConnection(
                 when (message) {
                     is WSClientMessage.SelectConnection -> {
                         logger.info("Client selected connection: ${message.connectionId}")
-                        // Client selected a connection - could send historical data here if needed
+                        send(WSClientMessage.Network())
                     }
                     else -> {
                         logger.warn("Unexpected message type from client: ${message::class.simpleName}")

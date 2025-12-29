@@ -3,7 +3,9 @@ package com.unde.server.socket.client.data
 import com.unde.server.socket.model.UndeRequestResponse
 import kotlinx.serialization.json.JsonObject
 
-internal class ConnectionDataStore {
+internal class WSClientConnectionDataStore {
+    // todo: refactor and store connected clients and all related info + move this totally to client zone
+    private val connections = mutableMapOf<>()
     private val networkRequests = mutableListOf<UndeRequestResponse>()
     private val databaseTraces = mutableListOf<JsonObject>()
     private val logcatTraces = mutableListOf<JsonObject>()

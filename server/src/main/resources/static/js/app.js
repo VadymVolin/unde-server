@@ -224,7 +224,7 @@ createApp({
         },
 
         handleBeforeUnload() {
-            this.exitServer();
+//            this.exitServer();
         },
 
         cleanup() {

@@ -3,14 +3,12 @@ package com.unde.server.socket.library
 import com.unde.server.constants.JsonToken
 import com.unde.server.constants.Text
 import com.unde.server.socket.client.WSClientConnectionBroker
-import com.unde.server.socket.client.data.ConnectionDataStore
+import com.unde.server.socket.client.data.WSClientConnectionDataStore
 import com.unde.server.socket.library.model.WSLibraryMessage
 import com.unde.server.socket.library.model.createResultCommandData
-import com.unde.server.socket.model.UndeRequestResponse
 import io.ktor.server.websocket.*
 import io.ktor.util.logging.*
 import io.ktor.websocket.*
-import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.isActive
 import kotlinx.serialization.json.Json
 
@@ -19,7 +17,6 @@ internal class WSLibraryConnection(
     private val session: DefaultWebSocketServerSession,
     private val onDisconnect: (WSLibraryConnection) -> Unit
 ) {
-    val dataStore = ConnectionDataStore()
     private val logger = KtorSimpleLogger(javaClass.simpleName)
 
     val json = Json { classDiscriminator = JsonToken.TYPE_TOKEN }
@@ -28,12 +25,14 @@ internal class WSLibraryConnection(
         logger.info("The connection to device[$id] has been established")
         try {
             send(WSLibraryMessage.Command(createResultCommandData(Text.CONNECTED_SUCCESSFULLY)))
-            session.incoming.consumeEach(::handleMessage)
+            for (frame in session.incoming) {
+                handleMessage(frame)
+            }
         } catch (e: Exception) {
-            logger.info("Exception has been caught, device[$id]: ${e.message}")
+            logger.info("Exception has been caught, device[$id]: $e")
         } finally {
             logger.info("Device[$id] has been disconnected")
-            dataStore.clear()
+            dataStore.clear() // todo: send it throw eventbus system to client socket
             onDisconnect(this@WSLibraryConnection)
         }
     }
@@ -61,9 +60,8 @@ internal class WSLibraryConnection(
                     is WSLibraryMessage.Network -> {
                         logger.info("Received NETWORK message: ${message.data}")
                         try {
-                            val networkData = json.decodeFromJsonElement(UndeRequestResponse.serializer(), message.data)
-                            dataStore.addNetworkRequest(networkData)
-                            WSClientConnectionBroker.broadcastNetwork(id, networkData)
+                            dataStore.addNetworkRequest(message.data)// todo: send it throw eventbus system to client socket
+                            WSClientConnectionBroker.broadcastNetwork(id, message.data)
                         } catch (e: Exception) {
                             logger.error("Failed to parse network data: ${e.message}")
                         }
@@ -73,12 +71,12 @@ internal class WSLibraryConnection(
                     }
                     is WSLibraryMessage.Logcat -> {
                         logger.info("Received LOGCAT message: ${message.data}")
-                        dataStore.addLogcatTrace(message.data)
+                        dataStore.addLogcatTrace(message.data)// todo: send it throw eventbus system to client socket
                         WSClientConnectionBroker.broadcastLogcat(id, message.data)
                     }
                     is WSLibraryMessage.Database -> {
                         logger.info("Received DATABASE message: ${message.data}")
-                        dataStore.addDatabaseTrace(message.data)
+                        dataStore.addDatabaseTrace(message.data)// todo: send it throw eventbus system to client socket
                         WSClientConnectionBroker.broadcastDatabase(id, message.data)
                     }
                 }

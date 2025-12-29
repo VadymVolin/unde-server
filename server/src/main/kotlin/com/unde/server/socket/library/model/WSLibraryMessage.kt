@@ -1,6 +1,7 @@
 package com.unde.server.socket.library.model
 
 import com.unde.server.constants.JsonToken
+import com.unde.server.socket.model.UndeRequestResponse
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -16,7 +17,7 @@ internal sealed interface WSLibraryMessage {
 
     @Serializable
     @SerialName(JsonToken.TYPE_NETWORK_TOKEN)
-    data class Network(val data: JsonObject) : WSLibraryMessage
+    data class Network(val data: UndeRequestResponse) : WSLibraryMessage
 
     @Serializable
     @SerialName(JsonToken.TYPE_DATABASE_TOKEN)
