@@ -1,4 +1,4 @@
-package com.unde.server.socket.library.model
+package com.unde.server.socket.remote.model
 
 import com.unde.server.constants.JsonToken
 import com.unde.server.socket.model.UndeRequestResponse
@@ -10,26 +10,26 @@ import kotlinx.serialization.json.encodeToJsonElement
 
 
 @Serializable
-internal sealed interface WSLibraryMessage {
+internal sealed interface WSRemoteMessage {
     @Serializable
     @SerialName(JsonToken.TYPE_COMMAND_TOKEN)
-    data class Command(val data: JsonObject) : WSLibraryMessage
+    data class Command(val data: JsonObject) : WSRemoteMessage
 
     @Serializable
     @SerialName(JsonToken.TYPE_NETWORK_TOKEN)
-    data class Network(val data: UndeRequestResponse) : WSLibraryMessage
+    data class Network(val data: UndeRequestResponse) : WSRemoteMessage
 
     @Serializable
     @SerialName(JsonToken.TYPE_DATABASE_TOKEN)
-    data class Database(val data: JsonObject) : WSLibraryMessage
+    data class Database(val data: JsonObject) : WSRemoteMessage
 
     @Serializable
     @SerialName(JsonToken.TYPE_TELEMETRY_TOKEN)
-    data class Telemetry(val data: JsonObject) : WSLibraryMessage
+    data class Telemetry(val data: JsonObject) : WSRemoteMessage
 
     @Serializable
     @SerialName(JsonToken.TYPE_LOGCAT_TOKEN)
-    data class Logcat(val data: JsonObject) : WSLibraryMessage
+    data class Logcat(val data: JsonObject) : WSRemoteMessage
 }
 
 
