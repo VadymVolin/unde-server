@@ -6,11 +6,11 @@ internal object WSRemoteConnectionBroker {
     private val _connections = mutableMapOf<String, WSRemoteConnection>()
 
     internal fun register(connection: WSRemoteConnection) {
-        _connections[connection.id] = connection
+        _connections[connection.remoteId] = connection
     }
 
     internal fun unregister(connection: WSRemoteConnection) {
-        _connections.remove(connection.id)
+        _connections.remove(connection.remoteId)
     }
 
     

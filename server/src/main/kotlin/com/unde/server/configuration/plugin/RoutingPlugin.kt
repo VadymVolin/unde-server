@@ -11,7 +11,6 @@ import io.ktor.server.http.content.*
 import io.ktor.server.routing.*
 
 internal fun Application.configureRouting() {
-    // TODO: check the future ktor version, currently there is an issue with shutdown url, ktor server is still active after it
     install(ShutDownUrl.ApplicationCallPlugin) {
         // The URL that will be intercepted (you can also use the application.config's ktor.deployment.shutdown.url key)
         shutDownUrl = Route.EXIT_ROUTE // POST request

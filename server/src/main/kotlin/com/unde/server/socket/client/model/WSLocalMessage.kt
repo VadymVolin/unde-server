@@ -13,6 +13,10 @@ internal sealed interface WSLocalMessage {
     data class ConnectionsList(val connections: List<String>): WSLocalMessage
     
     @Serializable
+    @SerialName(JsonToken.TYPE_NETWORKS_TOKEN)
+    data class Networks(val connectionId: String, val data: List<UndeRequestResponse>): WSLocalMessage
+
+    @Serializable
     @SerialName(JsonToken.TYPE_NETWORK_TOKEN)
     data class Network(val connectionId: String, val data: UndeRequestResponse): WSLocalMessage
     
