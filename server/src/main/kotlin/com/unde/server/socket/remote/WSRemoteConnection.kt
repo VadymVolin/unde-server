@@ -13,25 +13,25 @@ import kotlinx.coroutines.isActive
 import kotlinx.serialization.json.Json
 
 internal class WSRemoteConnection(
-    val remoteId: String,
-    private val session: DefaultWebSocketServerSession,
-    private val onDisconnect: (WSRemoteConnection) -> Unit
+    val connectionId: String,
+    private val session: DefaultWebSocketServerSession
 )  {
     private val logger = KtorSimpleLogger(javaClass.simpleName)
 
     private val json = Json { classDiscriminator = JsonToken.TYPE_TOKEN }
 
     internal suspend fun connect() {
-        logger.info("The connection to device[$remoteId] has been established")
+        logger.info("The connection to device[$connectionId] has been established")
         try {
+            WSDataManager.addRemoteConnection(connectionId)
             send(WSRemoteMessage.Command(createResultCommandData(Text.CONNECTED_SUCCESSFULLY)))
             session.incoming.consumeEach(::handleMessage)
         } catch (e: Exception) {
-            logger.info("Exception has been caught, device[$remoteId]: $e")
+            logger.info("Exception has been caught, device[$connectionId]: $e")
+            WSDataManager.removeRemoteConnection(connectionId)
         } finally {
-            logger.info("Device[$remoteId] has been disconnected")
-            WSDataManager.clearByRemoteClientId(remoteId)
-            onDisconnect(this)
+            logger.info("Device[$connectionId] has been disconnected")
+            WSDataManager.removeRemoteConnection(connectionId)
         }
     }
 
@@ -41,7 +41,7 @@ internal class WSRemoteConnection(
                 session.send(Frame.Text(json.encodeToString(WSRemoteMessage.serializer(), message)))
             }
         } catch (e: Exception) {
-            logger.error("Cannot send message to device[$remoteId]: ${e.message}")
+            logger.error("Cannot send message to device[$connectionId]: ${e.message}")
         }
     }
 
@@ -50,7 +50,7 @@ internal class WSRemoteConnection(
             try {
                 val text = frame.readText()
                 val message = json.decodeFromString<WSRemoteMessage>(text)
-                logger.info("Message from device[$remoteId] has been received: $text")
+                logger.info("Message from device[$connectionId] has been received: $text")
                 when (message) {
                     is WSRemoteMessage.Command -> {
                         logger.info("Received COMMAND message: ${message.data}")
@@ -58,7 +58,7 @@ internal class WSRemoteConnection(
 
                     is WSRemoteMessage.Network -> {
                         logger.info("Received NETWORK message: ${message.data}")
-                        WSDataManager.addNetworkMessage(remoteId, message)
+                        WSDataManager.addNetworkMessage(connectionId, message)
                     }
 
                     is WSRemoteMessage.Telemetry -> {

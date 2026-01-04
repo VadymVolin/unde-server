@@ -6,20 +6,18 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.update
 
 internal class WSConnectionDataStore() {
-    private val networkRequestsStateFlow = MutableStateFlow(mutableListOf<UndeRequestResponse>())
+    private val networkRequestsStateFlow = MutableStateFlow<List<UndeRequestResponse>>(mutableListOf())
+
     private val _networkRequestFlow = MutableSharedFlow<UndeRequestResponse>(extraBufferCapacity = 1)
     val networkRequestFlow = _networkRequestFlow.asSharedFlow()
 
     fun addNetworkRequest(data: UndeRequestResponse) = data.let { networkData ->
-        val a = _networkRequestFlow.tryEmit(networkData)
-        println("NetworkRequestFlow====>>>>> : $a")
-        networkRequestsStateFlow.update { it.apply { add(networkData) } }
+        _networkRequestFlow.tryEmit(networkData)
+        networkRequestsStateFlow.update { it + networkData }
     }
 
-
-
-    @Synchronized
-    fun getNetworkRequests(): List<UndeRequestResponse> = networkRequestsStateFlow.value.toList()
+    val networkRequests: List<UndeRequestResponse>
+        get() = networkRequestsStateFlow.value.toList()
 
     fun clear() {
         networkRequestsStateFlow.update { it.apply { clear() } }
