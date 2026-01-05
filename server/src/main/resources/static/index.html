@@ -1,15 +1,185 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport"
-          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Document</title>
+    <title>Unde Server Dashboard</title>
     <link rel="stylesheet" href="/css/style.css">
-    <script src="/js/script.js"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 </head>
+
 <body>
-<button onclick="exit()">exit</button>
+    <div id="app">
+        <header class="header">
+            <h1>Unde Server Dashboard</h1>
+            <div class="header-controls">
+
+                <!-- Theme Toggle -->
+                <button class="theme-toggle" @click="toggleTheme" title="Toggle Theme">
+                    <span v-if="theme === 'light'">🌙</span>
+                    <span v-else>☀️</span>
+                </button>
+
+                <div class="connection-selector">
+                    <select id="connection-select" v-model="selectedConnection" @change="onConnectionChange">
+                        <option value="">Select connection...</option>
+                        <option v-for="conn in connections" :key="conn" :value="conn">{{ conn }}</option>
+                    </select>
+                </div>
+
+                <div class="ws-status" :class="{ connected: wsConnected, disconnected: !wsConnected }">
+                    <span class="status-dot"></span>
+                    <span>{{ wsConnected ? 'Connected' : 'Disconnected' }}</span>
+                </div>
+                <button class="exit-btn" @click="exitServer">Exit</button>
+            </div>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab" :class="{ active: activeTab === 'network' }" @click="activeTab = 'network'">
+                Network
+            </button>
+            <button class="tab" :class="{ active: activeTab === 'database' }" @click="activeTab = 'database'">
+                Database
+            </button>
+            <button class="tab" :class="{ active: activeTab === 'logcat' }" @click="activeTab = 'logcat'">
+                Logcat
+            </button>
+        </nav>
+
+        <main class="content">
+            <!-- Network Tab -->
+            <div v-if="activeTab === 'network'" class="tab-content">
+                <div class="network-layout">
+
+                    <!-- RIGHT PANEL: Table List (Takes Remaining Space) -->
+                    <div class="requests-container">
+                        <div v-if="networkData.length === 0" class="empty-state">
+                            No requests captured.
+                        </div>
+
+                        <table v-else class="requests-table">
+                            <thead>
+                                <tr>
+                                    <th @click="sortBy('request.timestamp')" class="col-time">
+                                        Time <span v-if="sortKey === 'request.timestamp'" class="sort-icon">{{ sortIcon
+                                            }}</span>
+                                    </th>
+                                    <th @click="sortBy('response.code')" class="col-code">
+                                        Code <span v-if="sortKey === 'response.code'" class="sort-icon">{{ sortIcon
+                                            }}</span>
+                                    </th>
+                                    <th @click="sortBy('request.method')" class="col-method">
+                                        Method <span v-if="sortKey === 'request.method'" class="sort-icon">{{ sortIcon
+                                            }}</span>
+                                    </th>
+                                    <th @click="sortBy('request.url')" class="col-url">
+                                        URL <span v-if="sortKey === 'request.url'" class="sort-icon">{{ sortIcon
+                                            }}</span>
+                                    </th>
+                                    <th @click="sortBy('response.durationMs')" class="col-duration">
+                                        Duration <span v-if="sortKey === 'response.durationMs'" class="sort-icon">{{
+                                            sortIcon }}</span>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="(item, index) in sortedNetworkData" :key="item.originalIndex"
+                                    :class="{ selected: selectedRequestIndex === item.originalIndex }"
+                                    @click="selectRequest(item.originalIndex)">
+                                    <td class="col-time">{{ formatTime(item.request.timestamp) }}</td>
+                                    <td class="col-code">
+                                        <span class="status-code" :class="getStatusClass(item.response.code)">{{
+                                            item.response.code }}</span>
+                                    </td>
+                                    <td class="col-method">
+                                        <span class="method" :class="item.request.method.toLowerCase()">{{
+                                            item.request.method }}</span>
+                                    </td>
+                                    <td class="col-url">{{ item.request.url }}</td>
+                                    <td class="col-duration">{{ item.response.durationMs }}ms</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- LEFT PANEL: Details (ORDER 1 visually on Left) -->
+                    <!-- Active class triggers width animation/visibility -->
+                    <div class="network-details" :class="{ active: selectedRequestIndex !== null }">
+                        <div v-if="selectedRequest" class="details-panel-container">
+
+                            <div class="details-header">
+                                <button class="close-details-btn" @click="selectedRequestIndex = null" title="Close details">×</button>
+                                <div class="details-title-url">{{ selectedRequest.request.url }}</div>
+                                <div class="details-subtitle">
+                                    <span class="method" :class="selectedRequest.request.method.toLowerCase()">{{ selectedRequest.request.method }}</span>
+                                    <span class="status-code" :class="getStatusClass(selectedRequest.response.code)">{{ selectedRequest.response.code }}</span>
+                                    <span v-if="selectedRequest.response.durationMs !== '' && selectedRequest.response.durationMs !== null">{{ selectedRequest.response.durationMs }}ms</span>
+                                </div>
+                            </div>
+
+                            <div class="details-panel">
+                                <!-- Request Section -->
+                                <div class="details-section">
+                                    <h3>Request</h3>
+                                    <div class="kv-list" v-if="selectedRequest.request.timestamp && selectedRequest.request.timestamp > 0">
+                                        <div class="kv-key">Time</div>
+                                        <div class="kv-value code-block"><pre>{{ formatTime(selectedRequest.request.timestamp) }}</pre></div>
+                                    </div>
+                                    <div class="kv-key" style="margin-bottom:0.5rem" v-if="selectedRequest.request.header && selectedRequest.request.headers != []">Headers</div>
+                                    <div class="kv-list" v-if="selectedRequest.request.header && selectedRequest.request.headers != []">
+                                        <template v-for="(val, key) in selectedRequest.request.headers" :key="key">
+                                            <div class="kv-key">{{ key }}</div>
+                                            <div class="kv-value code-block"><pre>{{ formatJson(Array.isArray(val) ? val.join(', ') : val) }}</pre></div>
+                                        </template>
+                                    </div>
+                                    <div v-if="selectedRequest.request.body && selectedRequest.request.body !== '' && selectedRequest.request.body !== null" class="kv-key" style="margin-bottom:0.5rem">Body</div>
+                                    <div v-if="selectedRequest.request.body && selectedRequest.request.body !== '' && selectedRequest.request.body !== null" class="code-block">
+                                        <pre>{{ formatJson(selectedRequest.request.body) }}</pre>
+                                    </div>
+                                </div>
+
+                                <!-- Response Section -->
+                                <div class="details-section">
+                                    <h3>Response</h3>
+                                    <div class="kv-list">
+                                        <div class="kv-key">Protocol</div>
+                                        <div class="kv-value code-block"><pre>{{ formatJson(selectedRequest.response.protocol) }}</pre></div>
+                                    </div>
+                                    <div class="kv-key" style="margin-bottom:0.5rem">Headers</div>
+                                    <div class="kv-list">
+                                        <template v-for="(val, key) in selectedRequest.response.headers" :key="key">
+                                            <div class="kv-key">{{ key }}</div>
+                                            <div class="kv-value code-block"><pre>{{ formatJson(Array.isArray(val) ? val.join(', ') : val) }}</pre></div>
+                                        </template>
+                                    </div>
+                                    <div v-if="selectedRequest.response.body !== '' && selectedRequest.response.body !== null" class="kv-key" style="margin-bottom:0.5rem">Body</div>
+                                    <div v-if="selectedRequest.response.body !== '' && selectedRequest.response.body !== null" class="code-block">
+                                        <pre>{{ formatJson(selectedRequest.response.body) }}</pre>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Database Tab -->
+            <div v-if="activeTab === 'database'" class="tab-content">
+                <div class="empty-state">Database traces coming soon...</div>
+            </div>
+
+            <!-- Logcat Tab -->
+            <div v-if="activeTab === 'logcat'" class="tab-content">
+                <div class="empty-state">Logcat traces coming soon...</div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/js/app.js"></script>
 </body>
+
 </html>
