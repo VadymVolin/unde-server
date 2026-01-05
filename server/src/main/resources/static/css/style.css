@@ -234,6 +234,13 @@ body {
     background-color: var(--bg-color);
 }
 
+.empty-state {
+    display: flex;
+    flex-flow: row;
+    justify-content: center;
+    align-items: center;
+}
+
 /* Requests Table */
 .requests-table {
     width: 100%;
@@ -324,7 +331,7 @@ body {
     width: 0;
     /* Hidden by default */
     overflow: hidden;
-    border-right: 0;
+    border-left: 0;
     transition: width 0.3s ease;
     background-color: var(--surface-color);
     display: flex;
@@ -334,7 +341,7 @@ body {
 /* When active (Desktop) */
 .network-details.active {
     width: var(--details-panel-width);
-    border-right: 1px solid var(--border-color);
+    border-left: 1px solid var(--border-color);
 }
 
 /* Details Panel Content */
@@ -417,7 +424,8 @@ body {
     font-weight: 600;
     color: var(--text-color);
     word-break: break-word;
-    /* Handle long keys */
+    display: grid;
+    align-items: center;
 }
 
 .kv-value {
@@ -514,7 +522,7 @@ body {
         width: 0;
         /* Start hidden */
         z-index: 10;
-        border-right: none;
+        border-left: none;
         box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
     }
 

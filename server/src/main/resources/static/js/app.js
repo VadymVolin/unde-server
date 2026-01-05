@@ -294,13 +294,13 @@ createApp({
             return date.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3 });
         },
 
-        formatBody(body) {
+        formatJson(body) {
             if (!body) return 'null';
             try {
                 if (typeof body === 'string' && (body.startsWith('{') || body.startsWith('['))) {
-                    return JSON.stringify(JSON.parse(body), null, 2);
+                    return JSON.stringify(JSON.parse(body), null, 4);
                 }
-                return typeof body === 'object' ? JSON.stringify(body, null, 2) : body;
+                return typeof body === 'object' ? JSON.stringify(JSON.parse(body), null, 4) :  JSON.stringify(JSON.parse(body), null, 4);
             } catch (e) {
                 return body;
             }

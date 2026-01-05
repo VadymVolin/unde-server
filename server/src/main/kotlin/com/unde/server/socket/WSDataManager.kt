@@ -23,7 +23,7 @@ internal object WSDataManager {
 
     fun removeRemoteConnection(remoteClientId: String) {
         logger.info("Remove remote connection: $remoteClientId")
-        _remoteConnections.update { it + remoteClientId }
+        _remoteConnections.update { it - remoteClientId }
         _wsRemoteData.update {
             it.apply {
                 // TODO: FUTURE - Do we need to clear the data when device is disconnected?

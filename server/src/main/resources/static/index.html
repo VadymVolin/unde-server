@@ -54,74 +54,6 @@
             <div v-if="activeTab === 'network'" class="tab-content">
                 <div class="network-layout">
 
-                    <!-- LEFT PANEL: Details (ORDER 1 visually on Left) -->
-                    <!-- Active class triggers width animation/visibility -->
-                    <div class="network-details" :class="{ active: selectedRequestIndex !== null }">
-                        <div v-if="selectedRequest" class="details-panel-container">
-
-                            <div class="details-header">
-                                <button class="close-details-btn" @click="selectedRequestIndex = null"
-                                    title="Close details">×</button>
-                                <div class="details-title-url">{{ selectedRequest.request.url }}</div>
-                                <div class="details-subtitle">
-                                    <span class="method" :class="selectedRequest.request.method.toLowerCase()">{{
-                                        selectedRequest.request.method }}</span>
-                                    <span class="status-code" :class="getStatusClass(selectedRequest.response.code)">{{
-                                        selectedRequest.response.code }}</span>
-                                    <span>{{ selectedRequest.response.durationMs }}ms</span>
-                                </div>
-                            </div>
-
-                            <div class="details-panel">
-                                <!-- Request Section -->
-                                <div class="details-section">
-                                    <h3>Request</h3>
-                                    <div class="kv-list">
-                                        <div class="kv-key">Time</div>
-                                        <div class="kv-value">{{ formatTime(selectedRequest.request.timestamp) }}</div>
-                                    </div>
-                                    <br>
-                                    <div class="kv-key" style="margin-bottom:0.5rem">Headers</div>
-                                    <div class="kv-list">
-                                        <template v-for="(val, key) in selectedRequest.request.headers" :key="key">
-                                            <div class="kv-key">{{ key }}</div>
-                                            <div class="kv-value">{{ Array.isArray(val) ? val.join(', ') : val }}</div>
-                                        </template>
-                                    </div>
-                                    <br>
-                                    <div v-if="selectedRequest.request.body" class="kv-key"
-                                        style="margin-bottom:0.5rem">Body</div>
-                                    <div v-if="selectedRequest.request.body" class="code-block">
-                                        {{ formatBody(selectedRequest.request.body) }}
-                                    </div>
-                                </div>
-
-                                <!-- Response Section -->
-                                <div class="details-section">
-                                    <h3>Response</h3>
-                                    <div class="kv-list">
-                                        <div class="kv-key">Protocol</div>
-                                        <div class="kv-value">{{ selectedRequest.response.protocol }}</div>
-                                    </div>
-                                    <br>
-                                    <div class="kv-key" style="margin-bottom:0.5rem">Headers</div>
-                                    <div class="kv-list">
-                                        <template v-for="(val, key) in selectedRequest.response.headers" :key="key">
-                                            <div class="kv-key">{{ key }}</div>
-                                            <div class="kv-value">{{ Array.isArray(val) ? val.join(', ') : val }}</div>
-                                        </template>
-                                    </div>
-                                    <br>
-                                    <div v-if="selectedRequest.response.body" class="kv-key"
-                                        style="margin-bottom:0.5rem">Body</div>
-                                    <div v-if="selectedRequest.response.body" class="code-block">
-                                        {{ formatBody(selectedRequest.response.body) }}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
                     <!-- RIGHT PANEL: Table List (Takes Remaining Space) -->
                     <div class="requests-container">
                         <div v-if="networkData.length === 0" class="empty-state">
@@ -171,6 +103,65 @@
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+
+                    <!-- LEFT PANEL: Details (ORDER 1 visually on Left) -->
+                    <!-- Active class triggers width animation/visibility -->
+                    <div class="network-details" :class="{ active: selectedRequestIndex !== null }">
+                        <div v-if="selectedRequest" class="details-panel-container">
+
+                            <div class="details-header">
+                                <button class="close-details-btn" @click="selectedRequestIndex = null" title="Close details">×</button>
+                                <div class="details-title-url">{{ selectedRequest.request.url }}</div>
+                                <div class="details-subtitle">
+                                    <span class="method" :class="selectedRequest.request.method.toLowerCase()">{{ selectedRequest.request.method }}</span>
+                                    <span class="status-code" :class="getStatusClass(selectedRequest.response.code)">{{ selectedRequest.response.code }}</span>
+                                    <span v-if="selectedRequest.response.durationMs !== '' && selectedRequest.response.durationMs !== null">{{ selectedRequest.response.durationMs }}ms</span>
+                                </div>
+                            </div>
+
+                            <div class="details-panel">
+                                <!-- Request Section -->
+                                <div class="details-section">
+                                    <h3>Request</h3>
+                                    <div class="kv-list" v-if="selectedRequest.request.timestamp && selectedRequest.request.timestamp > 0">
+                                        <div class="kv-key">Time</div>
+                                        <div class="kv-value code-block"><pre>{{ formatTime(selectedRequest.request.timestamp) }}</pre></div>
+                                    </div>
+                                    <div class="kv-key" style="margin-bottom:0.5rem" v-if="selectedRequest.request.header && selectedRequest.request.headers != []">Headers</div>
+                                    <div class="kv-list" v-if="selectedRequest.request.header && selectedRequest.request.headers != []">
+                                        <template v-for="(val, key) in selectedRequest.request.headers" :key="key">
+                                            <div class="kv-key">{{ key }}</div>
+                                            <div class="kv-value code-block"><pre>{{ formatJson(Array.isArray(val) ? val.join(', ') : val) }}</pre></div>
+                                        </template>
+                                    </div>
+                                    <div v-if="selectedRequest.request.body && selectedRequest.request.body !== '' && selectedRequest.request.body !== null" class="kv-key" style="margin-bottom:0.5rem">Body</div>
+                                    <div v-if="selectedRequest.request.body && selectedRequest.request.body !== '' && selectedRequest.request.body !== null" class="code-block">
+                                        <pre>{{ formatJson(selectedRequest.request.body) }}</pre>
+                                    </div>
+                                </div>
+
+                                <!-- Response Section -->
+                                <div class="details-section">
+                                    <h3>Response</h3>
+                                    <div class="kv-list">
+                                        <div class="kv-key">Protocol</div>
+                                        <div class="kv-value code-block"><pre>{{ formatJson(selectedRequest.response.protocol) }}</pre></div>
+                                    </div>
+                                    <div class="kv-key" style="margin-bottom:0.5rem">Headers</div>
+                                    <div class="kv-list">
+                                        <template v-for="(val, key) in selectedRequest.response.headers" :key="key">
+                                            <div class="kv-key">{{ key }}</div>
+                                            <div class="kv-value code-block"><pre>{{ formatJson(Array.isArray(val) ? val.join(', ') : val) }}</pre></div>
+                                        </template>
+                                    </div>
+                                    <div v-if="selectedRequest.response.body !== '' && selectedRequest.response.body !== null" class="kv-key" style="margin-bottom:0.5rem">Body</div>
+                                    <div v-if="selectedRequest.response.body !== '' && selectedRequest.response.body !== null" class="code-block">
+                                        <pre>{{ formatJson(selectedRequest.response.body) }}</pre>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                 </div>
