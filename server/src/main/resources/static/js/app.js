@@ -21,13 +21,27 @@ createApp({
             activeTab: 'network',
             selectedConnection: '',
             connections: [],
+
+            // Data Arrays
             networkData: [],
             databaseData: [],
             logcatData: [],
-            expandedItems: new Set()
+
+            // UI State
+            theme: 'light',
+            selectedRequestIndex: null, // Track selected item index
         };
     },
+    computed: {
+        selectedRequest() {
+            if (this.selectedRequestIndex !== null && this.networkData[this.selectedRequestIndex]) {
+                return this.networkData[this.selectedRequestIndex];
+            }
+            return null;
+        }
+    },
     mounted() {
+        this.initTheme();
         this.connectWebSocket();
         window.addEventListener('beforeunload', this.handleBeforeUnload);
     },
@@ -35,6 +49,27 @@ createApp({
         this.cleanup();
     },
     methods: {
+        // --- Theme Logic ---
+        initTheme() {
+            const savedTheme = localStorage.getItem('unde-theme') || 'light';
+            this.setTheme(savedTheme);
+        },
+        toggleTheme() {
+            const newTheme = this.theme === 'light' ? 'dark' : 'light';
+            this.setTheme(newTheme);
+        },
+        setTheme(themeName) {
+            this.theme = themeName;
+            document.documentElement.setAttribute('data-theme', themeName);
+            localStorage.setItem('unde-theme', themeName);
+        },
+
+        // --- Selection Logic ---
+        selectRequest(index) {
+            this.selectedRequestIndex = index;
+        },
+
+        // --- WebSocket Logic ---
         connectWebSocket() {
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             const wsUrl = `${protocol}//${window.location.host}/ws/client`;
@@ -57,7 +92,6 @@ createApp({
         handleWebSocketMessage(event) {
             try {
                 const message = JSON.parse(event.data);
-                console.log('Received message:', message);
                 this.handleMessage(message);
             } catch (error) {
                 console.error('Failed to parse message:', error);
@@ -129,7 +163,6 @@ createApp({
 
         handleConnectionsList(message) {
             this.connections = message.connections || [];
-            console.log('Updated connections:', this.connections);
         },
 
         handleNetworkData(message) {
@@ -175,7 +208,6 @@ createApp({
         },
 
         onConnectionChange() {
-            console.log('Selected connection:', this.selectedConnection);
             this.clearAllData();
             this.sendConnectionSelection();
         },
@@ -184,7 +216,7 @@ createApp({
             this.networkData = [];
             this.databaseData = [];
             this.logcatData = [];
-            this.expandedItems.clear();
+            this.selectedRequestIndex = null;
         },
 
         sendConnectionSelection() {
@@ -197,29 +229,32 @@ createApp({
             }
         },
 
-        toggleExpand(index) {
-            if (this.expandedItems.has(index)) {
-                this.expandedItems.delete(index);
-            } else {
-                this.expandedItems.add(index);
-            }
-            // Force reactivity update for Set
-            this.expandedItems = new Set(this.expandedItems);
-        },
-
+        // --- Formatter Helpers ---
         getStatusClass(code) {
             if (code >= 200 && code < 300) return 'success';
-            if (code >= 300 && code < 400) return 'redirect';
-            if (code >= 400 && code < 500) return 'client-error';
-            if (code >= 500) return 'server-error';
+            if (code >= 300 && code < 400) return 'redirect'; // Warning color
+            if (code >= 400 && code < 500) return 'error'; // Client error
+            if (code >= 500) return 'error'; // Server error
             return '';
         },
 
-        formatHeaders(headers) {
-            if (!headers) return '';
-            return Object.entries(headers)
-                .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(', ') : value}`)
-                .join('\n');
+        formatTime(timestamp) {
+            if (!timestamp) return '';
+            const date = new Date(timestamp);
+            return date.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3 });
+        },
+
+        formatBody(body) {
+            if (!body) return 'null';
+            try {
+                // Try to parse if it's a JSON string to pretty print
+                if (typeof body === 'string' && (body.startsWith('{') || body.startsWith('['))) {
+                    return JSON.stringify(JSON.parse(body), null, 2);
+                }
+                return typeof body === 'object' ? JSON.stringify(body, null, 2) : body;
+            } catch (e) {
+                return body; // Return as is if not valid JSON
+            }
         },
 
         exitServer() {
@@ -232,8 +267,6 @@ createApp({
                 .then(response => {
                     if (response.ok) {
                         console.log('Server shutdown initiated');
-                    } else {
-                        console.error('Shutdown failed:', response.status);
                     }
                 })
                 .catch(error => {
@@ -242,7 +275,7 @@ createApp({
         },
 
         handleBeforeUnload() {
-//            this.exitServer();
+            //            this.exitServer();
         },
 
         cleanup() {

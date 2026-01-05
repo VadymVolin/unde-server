@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
 
 <head>
     <meta charset="UTF-8">
@@ -15,13 +15,20 @@
         <header class="header">
             <h1>Unde Server Dashboard</h1>
             <div class="header-controls">
+
+                <!-- Theme Toggle -->
+                <button class="theme-toggle" @click="toggleTheme" title="Toggle Theme">
+                    <span v-if="theme === 'light'">🌙</span>
+                    <span v-else>☀️</span>
+                </button>
+
                 <div class="connection-selector">
-                    <label for="connection-select">Connection:</label>
                     <select id="connection-select" v-model="selectedConnection" @change="onConnectionChange">
                         <option value="">Select connection...</option>
                         <option v-for="conn in connections" :key="conn" :value="conn">{{ conn }}</option>
                     </select>
                 </div>
+
                 <div class="ws-status" :class="{ connected: wsConnected, disconnected: !wsConnected }">
                     <span class="status-dot"></span>
                     <span>{{ wsConnected ? 'Connected' : 'Disconnected' }}</span>
@@ -43,74 +50,119 @@
         </nav>
 
         <main class="content">
-            <!-- Network Tab -->
+            <!-- Network Tab (Master-Detail Layout) -->
             <div v-if="activeTab === 'network'" class="tab-content">
-                <div v-if="networkData.length === 0" class="empty-state">
-                    No network requests yet. Connect a device and make some requests.
-                </div>
-                <div v-else class="network-list">
-                    <div v-for="(item, index) in networkData" :key="index" class="network-item">
-                        <div class="network-header" @click="toggleExpand(index)">
-                            <span class="method" :class="item.request.method.toLowerCase()">{{ item.request.method
-                                }}</span>
-                            <span class="url">{{ item.request.url }}</span>
-                            <span class="status" :class="getStatusClass(item.response.code)">{{ item.response.code
-                                }}</span>
-                            <span class="duration">{{ item.response.durationMs }}ms</span>
-                            <span class="expand-icon">{{ expandedItems.has(index) ? '▼' : '▶' }}</span>
+                <div class="network-layout">
+
+                    <!-- LEFT PANEL: List -->
+                    <div class="network-list">
+                        <div v-if="networkData.length === 0" class="empty-state">
+                            No requests captured.
                         </div>
-                        <div v-if="expandedItems.has(index)" class="network-details">
-                            <div class="detail-section">
-                                <h4>Request</h4>
-                                <div class="detail-row">
-                                    <strong>URL:</strong> {{ item.request.url }}
-                                </div>
-                                <div class="detail-row">
-                                    <strong>Method:</strong> {{ item.request.method }}
-                                </div>
-                                <div class="detail-row">
-                                    <strong>Headers:</strong>
-                                    <pre>{{ formatHeaders(item.request.headers) }}</pre>
-                                </div>
-                                <div v-if="item.request.body" class="detail-row">
-                                    <strong>Body:</strong>
-                                    <pre>{{ item.request.body }}</pre>
-                                </div>
+
+                        <div v-for="(item, index) in networkData" :key="index" class="network-item"
+                            :class="{ selected: selectedRequestIndex === index }" @click="selectRequest(index)">
+
+                            <div class="network-item-header">
+                                <span class="method" :class="item.request.method.toLowerCase()">{{ item.request.method
+                                    }}</span>
+                                <span class="status-code" :class="getStatusClass(item.response.code)">{{
+                                    item.response.code }}</span>
                             </div>
-                            <div class="detail-section">
-                                <h4>Response</h4>
-                                <div class="detail-row">
-                                    <strong>Status:</strong> {{ item.response.code }} {{ item.response.message }}
-                                </div>
-                                <div class="detail-row">
-                                    <strong>Protocol:</strong> {{ item.response.protocol }}
-                                </div>
-                                <div class="detail-row">
-                                    <strong>Headers:</strong>
-                                    <pre>{{ formatHeaders(item.response.headers) }}</pre>
-                                </div>
-                                <div v-if="item.response.body" class="detail-row">
-                                    <strong>Body:</strong>
-                                    <pre>{{ item.response.body }}</pre>
-                                </div>
+                            <span class="network-item-url">{{ item.request.url }}</span>
+                            <div class="network-item-meta">
+                                <span class="time">{{ formatTime(item.request.timestamp) }}</span>
+                                <span class="duration">{{ item.response.durationMs }}ms</span>
                             </div>
                         </div>
                     </div>
+
+                    <!-- RIGHT PANEL: Details -->
+                    <!-- Mobile: .active class slides it in -->
+                    <div class="network-details" :class="{ active: selectedRequestIndex !== null }">
+
+                        <div v-if="selectedRequest" class="details-panel-container">
+                            <!-- Mobile Back Button -->
+                            <button class="mobile-back-btn" @click="selectedRequestIndex = null">← Back to List</button>
+
+                            <div class="details-panel">
+                                <div class="details-header">
+                                    <div class="details-title-url">{{ selectedRequest.request.url }}</div>
+                                    <div class="details-subtitle">
+                                        <span class="method" :class="selectedRequest.request.method.toLowerCase()">{{
+                                            selectedRequest.request.method }}</span>
+                                        <span class="status-code"
+                                            :class="getStatusClass(selectedRequest.response.code)">{{
+                                            selectedRequest.response.code }} {{ selectedRequest.response.message
+                                            }}</span>
+                                        <span>{{ selectedRequest.response.durationMs }}ms</span>
+                                    </div>
+                                </div>
+
+                                <!-- Request Section -->
+                                <div class="details-section">
+                                    <h3>Request</h3>
+                                    <div class="kv-list">
+                                        <div class="kv-key">Time</div>
+                                        <div class="kv-value">{{ selectedRequest.request.timestamp }}</div>
+                                    </div>
+                                    <br>
+                                    <div class="kv-key" style="margin-bottom:0.5rem">Headers</div>
+                                    <div class="kv-list">
+                                        <template v-for="(val, key) in selectedRequest.request.headers" :key="key">
+                                            <div class="kv-key">{{ key }}</div>
+                                            <div class="kv-value">{{ Array.isArray(val) ? val.join(', ') : val }}</div>
+                                        </template>
+                                    </div>
+                                    <br>
+                                    <div v-if="selectedRequest.request.body" class="kv-key"
+                                        style="margin-bottom:0.5rem">Body</div>
+                                    <div v-if="selectedRequest.request.body" class="code-block">
+                                        {{ formatBody(selectedRequest.request.body) }}
+                                    </div>
+                                </div>
+
+                                <!-- Response Section -->
+                                <div class="details-section">
+                                    <h3>Response</h3>
+                                    <div class="kv-list">
+                                        <div class="kv-key">Protocol</div>
+                                        <div class="kv-value">{{ selectedRequest.response.protocol }}</div>
+                                    </div>
+                                    <br>
+                                    <div class="kv-key" style="margin-bottom:0.5rem">Headers</div>
+                                    <div class="kv-list">
+                                        <template v-for="(val, key) in selectedRequest.response.headers" :key="key">
+                                            <div class="kv-key">{{ key }}</div>
+                                            <div class="kv-value">{{ Array.isArray(val) ? val.join(', ') : val }}</div>
+                                        </template>
+                                    </div>
+                                    <br>
+                                    <div v-if="selectedRequest.response.body" class="kv-key"
+                                        style="margin-bottom:0.5rem">Body</div>
+                                    <div v-if="selectedRequest.response.body" class="code-block">
+                                        {{ formatBody(selectedRequest.response.body) }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div v-else class="empty-selection">
+                            Select a request to view details
+                        </div>
+                    </div>
+
                 </div>
             </div>
 
             <!-- Database Tab -->
             <div v-if="activeTab === 'database'" class="tab-content">
-                <div class="empty-state">
-                    Database traces coming soon...
-                </div>
+                <div class="empty-state">Database traces coming soon...</div>
             </div>
 
             <!-- Logcat Tab -->
             <div v-if="activeTab === 'logcat'" class="tab-content">
-                <div class="empty-state">
-                    Logcat traces coming soon...
-                </div>
+                <div class="empty-state">Logcat traces coming soon...</div>
             </div>
         </main>
     </div>
