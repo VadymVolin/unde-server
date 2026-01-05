@@ -50,61 +50,35 @@
         </nav>
 
         <main class="content">
-            <!-- Network Tab (Master-Detail Layout) -->
+            <!-- Network Tab -->
             <div v-if="activeTab === 'network'" class="tab-content">
                 <div class="network-layout">
 
-                    <!-- LEFT PANEL: List -->
-                    <div class="network-list">
-                        <div v-if="networkData.length === 0" class="empty-state">
-                            No requests captured.
-                        </div>
-
-                        <div v-for="(item, index) in networkData" :key="index" class="network-item"
-                            :class="{ selected: selectedRequestIndex === index }" @click="selectRequest(index)">
-
-                            <div class="network-item-header">
-                                <span class="method" :class="item.request.method.toLowerCase()">{{ item.request.method
-                                    }}</span>
-                                <span class="status-code" :class="getStatusClass(item.response.code)">{{
-                                    item.response.code }}</span>
-                            </div>
-                            <span class="network-item-url">{{ item.request.url }}</span>
-                            <div class="network-item-meta">
-                                <span class="time">{{ formatTime(item.request.timestamp) }}</span>
-                                <span class="duration">{{ item.response.durationMs }}ms</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- RIGHT PANEL: Details -->
-                    <!-- Mobile: .active class slides it in -->
+                    <!-- LEFT PANEL: Details (ORDER 1 visually on Left) -->
+                    <!-- Active class triggers width animation/visibility -->
                     <div class="network-details" :class="{ active: selectedRequestIndex !== null }">
-
                         <div v-if="selectedRequest" class="details-panel-container">
-                            <!-- Mobile Back Button -->
-                            <button class="mobile-back-btn" @click="selectedRequestIndex = null">← Back to List</button>
+
+                            <div class="details-header">
+                                <button class="close-details-btn" @click="selectedRequestIndex = null"
+                                    title="Close details">×</button>
+                                <div class="details-title-url">{{ selectedRequest.request.url }}</div>
+                                <div class="details-subtitle">
+                                    <span class="method" :class="selectedRequest.request.method.toLowerCase()">{{
+                                        selectedRequest.request.method }}</span>
+                                    <span class="status-code" :class="getStatusClass(selectedRequest.response.code)">{{
+                                        selectedRequest.response.code }}</span>
+                                    <span>{{ selectedRequest.response.durationMs }}ms</span>
+                                </div>
+                            </div>
 
                             <div class="details-panel">
-                                <div class="details-header">
-                                    <div class="details-title-url">{{ selectedRequest.request.url }}</div>
-                                    <div class="details-subtitle">
-                                        <span class="method" :class="selectedRequest.request.method.toLowerCase()">{{
-                                            selectedRequest.request.method }}</span>
-                                        <span class="status-code"
-                                            :class="getStatusClass(selectedRequest.response.code)">{{
-                                            selectedRequest.response.code }} {{ selectedRequest.response.message
-                                            }}</span>
-                                        <span>{{ selectedRequest.response.durationMs }}ms</span>
-                                    </div>
-                                </div>
-
                                 <!-- Request Section -->
                                 <div class="details-section">
                                     <h3>Request</h3>
                                     <div class="kv-list">
                                         <div class="kv-key">Time</div>
-                                        <div class="kv-value">{{ selectedRequest.request.timestamp }}</div>
+                                        <div class="kv-value">{{ formatTime(selectedRequest.request.timestamp) }}</div>
                                     </div>
                                     <br>
                                     <div class="kv-key" style="margin-bottom:0.5rem">Headers</div>
@@ -146,10 +120,57 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
 
-                        <div v-else class="empty-selection">
-                            Select a request to view details
+                    <!-- RIGHT PANEL: Table List (Takes Remaining Space) -->
+                    <div class="requests-container">
+                        <div v-if="networkData.length === 0" class="empty-state">
+                            No requests captured.
                         </div>
+
+                        <table v-else class="requests-table">
+                            <thead>
+                                <tr>
+                                    <th @click="sortBy('request.timestamp')" class="col-time">
+                                        Time <span v-if="sortKey === 'request.timestamp'" class="sort-icon">{{ sortIcon
+                                            }}</span>
+                                    </th>
+                                    <th @click="sortBy('response.code')" class="col-code">
+                                        Code <span v-if="sortKey === 'response.code'" class="sort-icon">{{ sortIcon
+                                            }}</span>
+                                    </th>
+                                    <th @click="sortBy('request.method')" class="col-method">
+                                        Method <span v-if="sortKey === 'request.method'" class="sort-icon">{{ sortIcon
+                                            }}</span>
+                                    </th>
+                                    <th @click="sortBy('request.url')" class="col-url">
+                                        URL <span v-if="sortKey === 'request.url'" class="sort-icon">{{ sortIcon
+                                            }}</span>
+                                    </th>
+                                    <th @click="sortBy('response.durationMs')" class="col-duration">
+                                        Duration <span v-if="sortKey === 'response.durationMs'" class="sort-icon">{{
+                                            sortIcon }}</span>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="(item, index) in sortedNetworkData" :key="item.originalIndex"
+                                    :class="{ selected: selectedRequestIndex === item.originalIndex }"
+                                    @click="selectRequest(item.originalIndex)">
+                                    <td class="col-time">{{ formatTime(item.request.timestamp) }}</td>
+                                    <td class="col-code">
+                                        <span class="status-code" :class="getStatusClass(item.response.code)">{{
+                                            item.response.code }}</span>
+                                    </td>
+                                    <td class="col-method">
+                                        <span class="method" :class="item.request.method.toLowerCase()">{{
+                                            item.request.method }}</span>
+                                    </td>
+                                    <td class="col-url">{{ item.request.url }}</td>
+                                    <td class="col-duration">{{ item.response.durationMs }}ms</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
 
                 </div>

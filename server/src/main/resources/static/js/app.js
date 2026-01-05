@@ -29,7 +29,11 @@ createApp({
 
             // UI State
             theme: 'light',
-            selectedRequestIndex: null, // Track selected item index
+            selectedRequestIndex: null,
+
+            // Sorting
+            sortKey: 'request.timestamp',
+            sortOrder: 'desc'
         };
     },
     computed: {
@@ -38,9 +42,45 @@ createApp({
                 return this.networkData[this.selectedRequestIndex];
             }
             return null;
+        },
+
+        sortedNetworkData() {
+            // Create a mapped array with original indices to preserve stability
+            const mappedData = this.networkData.map((item, index) => ({
+                ...item,
+                originalIndex: index
+            }));
+
+            // If no sort key, return data as is
+            if (!this.sortKey) {
+                return mappedData;
+            }
+
+            return mappedData.sort((a, b) => {
+                let valA = this.getNestedValue(a, this.sortKey);
+                let valB = this.getNestedValue(b, this.sortKey);
+
+                // Determine order
+                let multiplier = this.sortOrder === 'asc' ? 1 : -1;
+
+                // Handle nulls/undefined safely
+                if (valA === valB) return 0;
+                if (valA === null || valA === undefined) return 1;
+                if (valB === null || valB === undefined) return -1;
+
+                // Compare
+                if (valA < valB) return -1 * multiplier;
+                if (valA > valB) return 1 * multiplier;
+                return 0;
+            });
+        },
+
+        sortIcon() {
+            return this.sortOrder === 'asc' ? '▲' : '▼';
         }
     },
     mounted() {
+        console.log('App mounted. SortKey:', this.sortKey);
         this.initTheme();
         this.connectWebSocket();
         window.addEventListener('beforeunload', this.handleBeforeUnload);
@@ -66,7 +106,22 @@ createApp({
 
         // --- Selection Logic ---
         selectRequest(index) {
-            this.selectedRequestIndex = index;
+            this.selectedRequestIndex = (this.selectedRequestIndex === index) ? null : index;
+        },
+
+        // --- Sorting Logic ---
+        sortBy(key) {
+            if (this.sortKey === key) {
+                this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
+            } else {
+                this.sortKey = key;
+                this.sortOrder = 'desc';
+            }
+        },
+
+        getNestedValue(obj, path) {
+            if (!path || !obj) return null;
+            return path.split('.').reduce((o, i) => (o ? o[i] : null), obj);
         },
 
         // --- WebSocket Logic ---
@@ -139,23 +194,18 @@ createApp({
                 case MESSAGE_TYPES.CONNECTIONS_LIST:
                     this.handleConnectionsList(message);
                     break;
-
                 case MESSAGE_TYPES.NETWORK:
                     this.handleNetworkData(message);
                     break;
-
                 case MESSAGE_TYPES.NETWORKS:
                     this.handleNetworksData(message);
                     break;
-
                 case MESSAGE_TYPES.DATABASE:
                     this.handleDatabaseData(message);
                     break;
-
                 case MESSAGE_TYPES.LOGCAT:
                     this.handleLogcatData(message);
                     break;
-
                 default:
                     console.warn('Unknown message type:', type);
             }
@@ -196,14 +246,14 @@ createApp({
         addDataItem(dataArray, item) {
             dataArray.push(item);
             if (dataArray.length > MAX_DATA_ITEMS) {
-                dataArray.splice(MAX_DATA_ITEMS);
+                dataArray.splice(0, dataArray.length - MAX_DATA_ITEMS);
             }
         },
 
         addDataItems(dataArray, items) {
             dataArray.push(...items);
             if (dataArray.length > MAX_DATA_ITEMS) {
-                dataArray.splice(MAX_DATA_ITEMS);
+                dataArray.splice(0, dataArray.length - MAX_DATA_ITEMS);
             }
         },
 
@@ -232,9 +282,9 @@ createApp({
         // --- Formatter Helpers ---
         getStatusClass(code) {
             if (code >= 200 && code < 300) return 'success';
-            if (code >= 300 && code < 400) return 'redirect'; // Warning color
-            if (code >= 400 && code < 500) return 'error'; // Client error
-            if (code >= 500) return 'error'; // Server error
+            if (code >= 300 && code < 400) return 'redirect';
+            if (code >= 400 && code < 500) return 'error';
+            if (code >= 500) return 'error';
             return '';
         },
 
@@ -247,13 +297,12 @@ createApp({
         formatBody(body) {
             if (!body) return 'null';
             try {
-                // Try to parse if it's a JSON string to pretty print
                 if (typeof body === 'string' && (body.startsWith('{') || body.startsWith('['))) {
                     return JSON.stringify(JSON.parse(body), null, 2);
                 }
                 return typeof body === 'object' ? JSON.stringify(body, null, 2) : body;
             } catch (e) {
-                return body; // Return as is if not valid JSON
+                return body;
             }
         },
 
@@ -275,7 +324,7 @@ createApp({
         },
 
         handleBeforeUnload() {
-            //            this.exitServer();
+            // this.exitServer(); 
         },
 
         cleanup() {
