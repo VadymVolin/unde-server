@@ -20,6 +20,6 @@ internal class WSConnectionDataStore() {
         get() = networkRequestsStateFlow.value.toList()
 
     fun clear() {
-        networkRequestsStateFlow.update { it.apply { clear() } }
+        networkRequestsStateFlow.update { emptyList() }
     }
 }

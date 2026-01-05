@@ -2,10 +2,11 @@ const { createApp } = Vue;
 
 // Constants
 const WS_RECONNECT_INTERVAL_MS = 3000;
-const MAX_DATA_ITEMS = 100;
+const MAX_DATA_ITEMS = 1000;
 const MESSAGE_TYPES = {
     CONNECTIONS_LIST: 'connections_list',
     NETWORK: 'network',
+    NETWORKS: 'networks',
     DATABASE: 'database',
     LOGCAT: 'logcat',
     SELECT_CONNECTION: 'select_connection'
@@ -109,6 +110,10 @@ createApp({
                     this.handleNetworkData(message);
                     break;
 
+                case MESSAGE_TYPES.NETWORKS:
+                    this.handleNetworksData(message);
+                    break;
+
                 case MESSAGE_TYPES.DATABASE:
                     this.handleDatabaseData(message);
                     break;
@@ -133,6 +138,12 @@ createApp({
             }
         },
 
+        handleNetworksData(message) {
+            if (this.shouldDisplayData(message.connectionId)) {
+                this.addDataItems(this.networkData, message.data);
+            }
+        },
+
         handleDatabaseData(message) {
             if (this.shouldDisplayData(message.connectionId)) {
                 this.addDataItem(this.databaseData, message.data);
@@ -150,7 +161,14 @@ createApp({
         },
 
         addDataItem(dataArray, item) {
-            dataArray.unshift(item);
+            dataArray.push(item);
+            if (dataArray.length > MAX_DATA_ITEMS) {
+                dataArray.splice(MAX_DATA_ITEMS);
+            }
+        },
+
+        addDataItems(dataArray, items) {
+            dataArray.push(...items);
             if (dataArray.length > MAX_DATA_ITEMS) {
                 dataArray.splice(MAX_DATA_ITEMS);
             }
