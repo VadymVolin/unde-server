@@ -3,7 +3,7 @@ package com.unde.server.socket.remote
 import com.unde.server.constants.JsonToken
 import com.unde.server.constants.Text
 import com.unde.server.socket.WSDataManager
-import com.unde.server.socket.remote.model.WSRemoteMessage
+import com.unde.server.socket.remote.model.SocketRemoteMessage
 import com.unde.server.socket.remote.model.createResultCommandData
 import io.ktor.server.websocket.*
 import io.ktor.util.logging.*
@@ -11,6 +11,7 @@ import io.ktor.websocket.*
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.isActive
 import kotlinx.serialization.json.Json
+import kotlin.coroutines.cancellation.CancellationException
 
 internal class WSRemoteConnection(
     val connectionId: String,
@@ -24,9 +25,10 @@ internal class WSRemoteConnection(
         logger.info("The connection to device[$connectionId] has been established")
         try {
             WSDataManager.addRemoteConnection(connectionId)
-            send(WSRemoteMessage.Command(createResultCommandData(Text.CONNECTED_SUCCESSFULLY)))
+            send(SocketRemoteMessage.Command(createResultCommandData(Text.CONNECTED_SUCCESSFULLY)))
             session.incoming.consumeEach(::handleMessage)
         } catch (e: Exception) {
+            if (e is CancellationException) throw e
             logger.info("Exception has been caught, device[$connectionId]: $e")
             WSDataManager.removeRemoteConnection(connectionId)
         } finally {
@@ -35,12 +37,13 @@ internal class WSRemoteConnection(
         }
     }
 
-    internal suspend fun send(message: WSRemoteMessage) {
+    internal suspend fun send(message: SocketRemoteMessage) {
         try {
             if (session.isActive) {
-                session.send(Frame.Text(json.encodeToString(WSRemoteMessage.serializer(), message)))
+                session.send(Frame.Text(json.encodeToString(SocketRemoteMessage.serializer(), message)))
             }
         } catch (e: Exception) {
+            if (e is CancellationException) throw e
             logger.error("Cannot send message to device[$connectionId]: ${e.message}")
         }
     }
@@ -49,29 +52,29 @@ internal class WSRemoteConnection(
         if (frame is Frame.Text) {
             try {
                 val text = frame.readText()
-                val message = json.decodeFromString<WSRemoteMessage>(text)
+                val message = json.decodeFromString<SocketRemoteMessage>(text)
                 logger.info("Message from device[$connectionId] has been received: $text")
                 when (message) {
-                    is WSRemoteMessage.Command -> {
+                    is SocketRemoteMessage.Command -> {
                         logger.info("Received COMMAND message: ${message.data}")
                     }
 
-                    is WSRemoteMessage.Network -> {
+                    is SocketRemoteMessage.Network -> {
                         logger.info("Received NETWORK message: ${message.data}")
                         WSDataManager.addNetworkMessage(connectionId, message)
                     }
 
-                    is WSRemoteMessage.Telemetry -> {
+                    is SocketRemoteMessage.Telemetry -> {
                         logger.info("Received TELEMETRY message: ${message.data}")
 //                        WSDataManager.addTelemetry(remoteId, message)
                     }
 
-                    is WSRemoteMessage.Logcat -> {
+                    is SocketRemoteMessage.Logcat -> {
                         logger.info("Received LOGCAT message: ${message.data}")
 //                        WSDataManager.addLogcatTrace(remoteId, message)
                     }
 
-                    is WSRemoteMessage.Database -> {
+                    is SocketRemoteMessage.Database -> {
                         logger.info("Received DATABASE message: ${message.data}")
 //                        WSDataManager.addDatabaseTrace(remoteId, message)
                     }

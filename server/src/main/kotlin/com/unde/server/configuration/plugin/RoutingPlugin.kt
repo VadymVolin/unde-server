@@ -4,6 +4,7 @@ import com.unde.server.configuration.adb.AdbManager
 import com.unde.server.configuration.router.registerRoutes
 import com.unde.server.constants.Format
 import com.unde.server.constants.Route
+import com.unde.server.socket.remote.ServerSocketConnection
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.http.content.*
@@ -16,6 +17,7 @@ internal fun Application.configureRouting() {
         // A function that will be executed to get the exit code of the process
         exitCodeSupplier = {
             AdbManager.release()
+            ServerSocketConnection.disconnect()
             println("Shutting down the JVM.")
             0
         } // ApplicationCall.() -> Int

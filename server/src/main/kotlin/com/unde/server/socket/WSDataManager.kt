@@ -1,7 +1,7 @@
 package com.unde.server.socket
 
 import com.unde.server.socket.model.WSConnectionDataStore
-import com.unde.server.socket.remote.model.WSRemoteMessage
+import com.unde.server.socket.remote.model.SocketRemoteMessage
 import io.ktor.util.logging.KtorSimpleLogger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -34,7 +34,7 @@ internal object WSDataManager {
         }
     }
 
-    fun addNetworkMessage(remoteClientId: String, network: WSRemoteMessage.Network) = _wsRemoteData.update {
+    fun addNetworkMessage(remoteClientId: String, network: SocketRemoteMessage.Network) = _wsRemoteData.update {
         it.apply {
             it[remoteClientId]?.addNetworkRequest(network.data)
         }

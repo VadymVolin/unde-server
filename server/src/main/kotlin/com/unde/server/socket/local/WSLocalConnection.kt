@@ -1,8 +1,8 @@
-package com.unde.server.socket.client
+package com.unde.server.socket.local
 
 import com.unde.server.constants.JsonToken
 import com.unde.server.socket.WSDataManager
-import com.unde.server.socket.client.model.WSLocalMessage
+import com.unde.server.socket.local.model.WSLocalMessage
 import io.ktor.server.websocket.*
 import io.ktor.util.logging.*
 import io.ktor.websocket.*

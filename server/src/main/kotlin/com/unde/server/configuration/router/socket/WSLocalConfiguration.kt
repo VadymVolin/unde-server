@@ -1,7 +1,7 @@
 package com.unde.server.configuration.router.socket
 
 import com.unde.server.constants.Route
-import com.unde.server.socket.client.WSLocalConnection
+import com.unde.server.socket.local.WSLocalConnection
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 

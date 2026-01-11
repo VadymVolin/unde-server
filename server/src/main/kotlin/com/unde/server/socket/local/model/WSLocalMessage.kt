@@ -1,4 +1,4 @@
-package com.unde.server.socket.client.model
+package com.unde.server.socket.local.model
 
 import com.unde.server.constants.JsonToken
 import com.unde.server.socket.model.UndeRequestResponse
