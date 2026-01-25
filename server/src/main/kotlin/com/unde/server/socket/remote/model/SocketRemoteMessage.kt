@@ -11,6 +11,11 @@ import kotlinx.serialization.json.encodeToJsonElement
 
 @Serializable
 internal sealed interface SocketRemoteMessage {
+
+    @Serializable
+    @SerialName(JsonToken.TYPE_RESULT_TOKEN)
+    data class Result(val data: String) : SocketRemoteMessage
+
     @Serializable
     @SerialName(JsonToken.TYPE_COMMAND_TOKEN)
     data class Command(val data: JsonObject) : SocketRemoteMessage

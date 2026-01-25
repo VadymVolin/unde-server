@@ -61,7 +61,7 @@ object AdbManager {
         try {
             devices.forEach {
                 currentCoroutineContext().ensureActive()
-                val process = ProcessBuilder("adb", "-s", it, "reverse", "tcp:8080", "tcp:8080")
+                val process = ProcessBuilder("adb", "-s", it, "reverse", "tcp:8081", "tcp:8081")
                     .redirectErrorStream(true)
                     .start()
                 LOGGER.info("Trying to setup adb reverse for device: $it")

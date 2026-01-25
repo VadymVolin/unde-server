@@ -59,7 +59,7 @@ internal object ServerSocketConnection {
         try {
             socketScope?.cancel()
             serverSocket?.dispose()
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             logger.error("Cannot release server socket")
         }
     }
@@ -71,17 +71,23 @@ internal object ServerSocketConnection {
             while (!client.isClosed && !readChannel.isClosedForRead) {
                 logger.info("Listen for a new message: ")
                 try {
-                    val byteArray = ByteArray(readChannel.readUTF8Line()!!.toInt())
+                    val dataSize = readChannel.readUTF8Line()?.toInt() ?: throw SocketDataException()
+                    val byteArray = ByteArray(dataSize)
                     ensureActive()
                     readChannel.readFully(byteArray)
                     ensureActive()
                     val data = byteArray.decodeToString()
                     handleReceivedData(clientId, data)
+                    send(client, writeChannel, SocketRemoteMessage.Result(dataSize.toString()))
                 } catch (e: Exception) {
                     when (e) {
                         is CancellationException -> throw e
+                        is SocketDataException -> {
+                            logger.error("Failed to read data from client $clientId, data is null, start disconnection", e)
+                            disconnectClientById(clientId)
+                        }
                         else -> {
-                            logger.error("Failed to read data from client $clientId, data is null, start disconnection")
+                            logger.error("Failed to read data from client $clientId", e)
                             disconnectClientById(clientId)
                         }
                     }
@@ -90,7 +96,19 @@ internal object ServerSocketConnection {
         }
     }
 
-//    private fun send(socket, message)
+    private fun send(client: Socket, writeChannel: ByteWriteChannel, message: SocketRemoteMessage) {
+        client.launch {
+            try {
+                val encodedJsonString = json.encodeToString(message)
+                writeChannel.writeStringUtf8(encodedJsonString)
+                logger.info("Sent message[${message.javaClass.simpleName}]: $encodedJsonString")
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                logger.error("Failed to send message: ${e.message}", e)
+            }
+        }
+
+    }
 
     private fun handleReceivedData(clientId: String, data: String) {
         try {
@@ -120,6 +138,8 @@ internal object ServerSocketConnection {
                     logger.info("Received DATABASE message: ${message.data}")
 //                        WSDataManager.addDatabaseTrace(remoteId, message)
                 }
+
+                else -> logger.error("Unhandled message: ${message.javaClass.simpleName} - $message")
             }
         } catch (e: Exception) {
             logger.error("Failed to parse message: ", e)
@@ -138,4 +158,6 @@ internal object ServerSocketConnection {
             }
         }
     }
+
+    private class SocketDataException : IllegalArgumentException("Cannot read message size, data is null")
 }
