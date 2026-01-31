@@ -88,7 +88,6 @@ internal object ServerSocketConnection {
                         }
                         else -> {
                             logger.error("Failed to read data from client $clientId", e)
-                            disconnectClientById(clientId)
                         }
                     }
                 }
@@ -159,5 +158,5 @@ internal object ServerSocketConnection {
         }
     }
 
-    private class SocketDataException : IllegalArgumentException("Cannot read message size, data is null")
+    private class SocketDataException : IllegalArgumentException("Cannot read message, data is null")
 }
