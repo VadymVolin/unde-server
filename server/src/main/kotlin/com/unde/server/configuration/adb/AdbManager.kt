@@ -6,6 +6,14 @@ import io.ktor.util.logging.*
 import kotlinx.coroutines.*
 import java.io.BufferedReader
 
+/**
+ * Manages ADB (Android Debug Bridge) operations.
+ *
+ * This singleton is responsible for:
+ * - Detecting connected Android devices.
+ * - Setting up reverse port forwarding (`adb reverse`) to allow devices to connect to the server's local port.
+ * - Periodically polling for new devices.
+ */
 object AdbManager {
 
     private var adbDevicesJob: Job? = null
@@ -16,6 +24,11 @@ object AdbManager {
 
     private val LOGGER = KtorSimpleLogger(javaClass.simpleName)
 
+    /**
+     * Initializes the ADB manager and starts the device monitoring job.
+     *
+     * @param application The Ktor [Application] instance used to launch the coroutine.
+     */
     internal fun setup(application: Application) {
         adbDevicesJob?.cancel()
         adbDevicesJob = application.launch(Dispatchers.Default) {
@@ -33,6 +46,9 @@ object AdbManager {
         }
     }
 
+    /**
+     * Stops the device monitoring job and releases resources.
+     */
     internal fun release() {
         LOGGER.info("Release manager and resources")
         adbDevicesJob?.cancel()

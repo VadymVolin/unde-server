@@ -5,6 +5,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.update
 
+/**
+ * Stores data related to a single remote connection (device).
+ *
+ * Keeps track of network requests and provides a flow for updates.
+ */
 internal class WSConnectionDataStore() {
     private val networkRequestsStateFlow = MutableStateFlow<List<UndeRequestResponse>>(mutableListOf())
 

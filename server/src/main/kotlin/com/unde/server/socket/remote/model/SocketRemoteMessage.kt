@@ -9,6 +9,9 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.encodeToJsonElement
 
 
+/**
+ * Messages exchanged with remote Android devices via TCP sockets.
+ */
 @Serializable
 internal sealed interface SocketRemoteMessage {
 

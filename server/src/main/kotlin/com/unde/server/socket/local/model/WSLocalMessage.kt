@@ -6,6 +6,9 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 
+/**
+ * Messages exchanged with local WebSocket clients (UI).
+ */
 @Serializable
 internal sealed interface WSLocalMessage {
     @Serializable

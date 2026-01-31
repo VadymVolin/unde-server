@@ -15,6 +15,17 @@ import kotlinx.serialization.json.Json
 import java.util.*
 import kotlin.coroutines.cancellation.CancellationException
 
+/**
+ * Represents a WebSocket connection with a local client (e.g., UI).
+ *
+ * This class handles:
+ * - sending network traffic updates to the client.
+ * - processing commands from the client (e.g., selecting a device to monitor).
+ * - managing the lifecycle of the WebSocket session.
+ *
+ * @property connectionId Unique identifier for this connection.
+ * @property session The WebSocket session.
+ */
 internal class WSLocalConnection(
     val connectionId: String = UUID.randomUUID().toString(),
     private val session: DefaultWebSocketServerSession
@@ -25,6 +36,12 @@ internal class WSLocalConnection(
     private var networkDataStoreJob: Job? = null
     private var connectionsDataStoreJob: Job? = null
 
+    /**
+     * Initiates the WebSocket connection handling.
+     *
+     * This method blocks until the connection is closed. It sets up observers for
+     * remote connections and processes incoming messages.
+     */
     internal suspend fun connect() = withContext(Dispatchers.Default) {
         logger.info("Client connection [$connectionId] has been established")
         try {
@@ -43,6 +60,11 @@ internal class WSLocalConnection(
         }
     }
 
+    /**
+     * Sends a message to the connected local client.
+     *
+     * @param message The [WSLocalMessage] to send.
+     */
     internal suspend fun send(message: WSLocalMessage) = withContext(Dispatchers.Default) {
         try {
             if (session.isActive) {

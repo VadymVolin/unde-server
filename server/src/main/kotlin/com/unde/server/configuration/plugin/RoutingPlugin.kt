@@ -10,6 +10,15 @@ import io.ktor.server.engine.*
 import io.ktor.server.http.content.*
 import io.ktor.server.routing.*
 
+/**
+ * Configures the application's routing and shutdown logic.
+ *
+ * This function:
+ * - Installs the [ShutDownUrl] plugin to gracefully stop the server.
+ * - Releases ADB and Socket resources on shutdown.
+ * - Sets up static content serving.
+ * - Registers specific API and Socket routes.
+ */
 internal fun Application.configureRouting() {
     install(ShutDownUrl.ApplicationCallPlugin) {
         // The URL that will be intercepted (you can also use the application.config's ktor.deployment.shutdown.url key)

@@ -7,6 +7,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
+/**
+ * Central data manager for WebSocket and ServerSocket data.
+ *
+ * This singleton:
+ * - Maintains the state of active remote connections (devices).
+ * - Stores data received from devices (Network, Trace, etc.).
+ * - Exposes flows for local clients to observe data changes.
+ */
 internal object WSDataManager {
     private val logger = KtorSimpleLogger(javaClass.simpleName)
 
@@ -15,6 +23,11 @@ internal object WSDataManager {
 
     private val _wsRemoteData = MutableStateFlow<Map<String, WSConnectionDataStore>>(emptyMap())
 
+    /**
+     * Registers a new remote device connection.
+     *
+     * @param remoteClientId The unique identifier of the connecting device.
+     */
     fun addRemoteConnection(remoteClientId: String) {
         logger.info("New remote connection: $remoteClientId")
         _wsRemoteData.update { it.plus(remoteClientId to WSConnectionDataStore()) }

@@ -5,6 +5,11 @@ import com.unde.server.socket.remote.ServerSocketConnection
 import io.ktor.server.application.*
 import io.ktor.server.routing.*
 
+/**
+ * Sets up the remote socket listener for Android devices.
+ *
+ * Binds the server socket to the configured host and default port.
+ */
 internal fun Routing.setupSocketRemoteRoutingConfiguration() =
     ServerSocketConnection.connect(
         application.engine.environment.config.host,

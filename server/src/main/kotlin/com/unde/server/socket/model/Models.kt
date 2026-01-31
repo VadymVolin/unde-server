@@ -3,6 +3,15 @@ package com.unde.server.socket.model
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+/**
+ * Represents an intercepted network request.
+ *
+ * @property requestTime Timestamp of the request.
+ * @property url The request URL.
+ * @property method HTTP method (GET, POST, etc.).
+ * @property headers Request headers.
+ * @property body Request body content.
+ */
 @Serializable
 internal data class UndeRequest(
     @SerialName("requestTime")
@@ -17,6 +26,16 @@ internal data class UndeRequest(
     val body: String? = null
 )
 
+/**
+ * Represents an intercepted network response.
+ *
+ * @property responseTime Timestamp of the response.
+ * @property code HTTP status code.
+ * @property message HTTP status message.
+ * @property headers Response headers.
+ * @property protocol Protocol used (e.g., http/1.1).
+ * @property body Response body content.
+ */
 @Serializable
 internal data class UndeResponse(
     @SerialName("responseTime")
@@ -33,6 +52,9 @@ internal data class UndeResponse(
     val body: String?
 )
 
+/**
+ * Wraps a paired request and response.
+ */
 @Serializable
 internal data class UndeRequestResponse(
     @SerialName("request")

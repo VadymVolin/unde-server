@@ -12,6 +12,15 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.serialization.json.Json
 
+/**
+ * Manages the raw TCP socket server for device connections.
+ *
+ * This singleton:
+ * - Listens on a specific port (default 8081) for incoming TCP connections from Android devices.
+ * - Manages the lifecycle of these connections.
+ * - Handles incoming raw data streams and deserializes them.
+ * - Sends responses back to devices.
+ */
 internal object ServerSocketConnection {
     private val logger = KtorSimpleLogger(javaClass.simpleName)
 
@@ -25,6 +34,12 @@ internal object ServerSocketConnection {
     private var serverSocket: ServerSocket? = null
     private val sockets = mutableMapOf<String, Socket>()
 
+    /**
+     * Starts the TCP server and listens for incoming connections.
+     *
+     * @param host The host address to bind to.
+     * @param port The port number to listen on.
+     */
     internal fun connect(host: String, port: Int) {
         val scope = socketScope ?: CoroutineScope(Dispatchers.IO + SupervisorJob()).also { socketScope = it }
         scope.launch { // server coroutine
@@ -51,6 +66,9 @@ internal object ServerSocketConnection {
         }
     }
 
+    /**
+     * Stops the TCP server and closes all active connections.
+     */
     internal fun disconnect() {
         sockets.keys.forEach {
             disconnectClientById(it)
