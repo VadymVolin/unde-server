@@ -96,7 +96,7 @@ internal object ServerSocketConnection {
                     ensureActive()
                     val data = byteArray.decodeToString()
                     handleReceivedData(clientId, data)
-                    send(client, writeChannel, SocketRemoteMessage.Result(dataSize.toString()))
+//                    send(client, writeChannel, SocketRemoteMessage.Result(dataSize.toString()))
                 } catch (e: Exception) {
                     when (e) {
                         is CancellationException -> throw e

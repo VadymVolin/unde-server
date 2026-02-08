@@ -32,7 +32,7 @@ createApp({
             selectedRequestIndex: null,
 
             // Sorting
-            sortKey: 'request.timestamp',
+            sortKey: 'request.requestTime',
             sortOrder: 'desc'
         };
     },
@@ -257,6 +257,12 @@ createApp({
             }
         },
 
+        selectDevice(connectionId) {
+            this.selectedConnection = connectionId;
+            this.clearAllData();
+            this.sendConnectionSelection();
+        },
+
         onConnectionChange() {
             this.clearAllData();
             this.sendConnectionSelection();
@@ -300,7 +306,7 @@ createApp({
                 if (typeof body === 'string' && (body.startsWith('{') || body.startsWith('['))) {
                     return JSON.stringify(JSON.parse(body), null, 4);
                 }
-                return typeof body === 'object' ? JSON.stringify(JSON.parse(body), null, 4) :  JSON.stringify(JSON.parse(body), null, 4);
+                return typeof body === 'object' ? JSON.stringify(JSON.parse(body), null, 4) : JSON.stringify(JSON.parse(body), null, 4);
             } catch (e) {
                 return body;
             }
