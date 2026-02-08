@@ -258,8 +258,13 @@ createApp({
         },
 
         selectDevice(connectionId) {
-            this.selectedConnection = connectionId;
+            // Always clear data first to ensure fresh state
             this.clearAllData();
+
+            // Set the selected connection
+            this.selectedConnection = connectionId;
+
+            // Always send the selection to backend to request fresh data
             this.sendConnectionSelection();
         },
 
