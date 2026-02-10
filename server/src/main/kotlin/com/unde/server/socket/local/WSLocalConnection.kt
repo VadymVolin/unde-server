@@ -65,7 +65,7 @@ internal class WSLocalConnection(
      *
      * @param message The [WSLocalMessage] to send.
      */
-    internal suspend fun send(message: WSLocalMessage) = withContext(Dispatchers.Default) {
+    internal suspend fun send(message: WSLocalMessage) {
         try {
             if (session.isActive) {
                 session.send(Frame.Text(json.encodeToString(WSLocalMessage.serializer(), message)))
@@ -75,7 +75,7 @@ internal class WSLocalConnection(
         }
     }
 
-    private suspend fun handleMessage(frame: Frame) = withContext(Dispatchers.Default) {
+    private suspend fun CoroutineScope.handleMessage(frame: Frame) {
         if (frame is Frame.Text) {
             val text = frame.readText()
             val message = try {
@@ -99,6 +99,8 @@ internal class WSLocalConnection(
                     logger.warn("Unexpected message type from local client: ${message?.javaClass?.simpleName}")
                 }
             }
+        } else {
+            logger.warn("Unexpected Frame type: " + frame.javaClass.simpleName)
         }
     }
 
