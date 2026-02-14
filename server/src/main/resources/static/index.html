@@ -18,19 +18,61 @@
 <body>
     <div id="app">
         <!-- Left Sidebar -->
-        <aside class="sidebar">
-            <div class="sidebar-top">
-                <!-- Sidebar Header -->
-                <div class="sidebar-header">
-                    <h1 class="sidebar-title">U</h1>
-                </div>
-
-                <!-- WebSocket Status -->
+        <!-- Top Header -->
+        <header class="app-header">
+            <div class="header-left">
+                <h1 class="app-title">Unde</h1>
                 <div class="ws-status" :class="{ connected: wsConnected, disconnected: !wsConnected }"
                     title="Connection Status">
                     <span class="status-dot"></span>
+                    <span class="status-text">{{ wsConnected ? 'Connected' : 'Disconnected' }}</span>
                 </div>
 
+                <!-- Device Selector -->
+                <div class="device-selector-container">
+                    <button class="device-selector-btn" @click="toggleDeviceDropdown"
+                        :class="{ active: showDeviceDropdown }">
+                        <span class="device-icon">📱</span>
+                        <span class="device-label">{{ selectedConnection || 'All Devices' }}</span>
+                        <span class="dropdown-arrow">▼</span>
+                    </button>
+
+                    <div v-if="showDeviceDropdown" class="device-dropdown-menu">
+                        <button class="dropdown-item" :class="{ active: selectedConnection === '' }"
+                            @click="selectDevice('')">
+                            <span class="device-icon">📱</span>
+                            <span>All Devices</span>
+                        </button>
+                        <button v-for="conn in connections" :key="conn" class="dropdown-item"
+                            :class="{ active: selectedConnection === conn }" @click="selectDevice(conn)">
+                            <span class="device-icon">📱</span>
+                            <span>{{ conn }}</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="header-right">
+                <!-- Theme Toggle -->
+                <button class="theme-toggle" @click="toggleTheme"
+                    :title="theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'">
+                    <span v-if="theme === 'light'">🌙</span>
+                    <span v-else>☀️</span>
+                </button>
+
+                <button class="icon-btn exit-btn" @click="exitServer" title="Exit Server">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
+                        <line x1="12" y1="2" x2="12" y2="12"></line>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <div class="app-body">
+            <!-- Left Sidebar -->
+            <aside class="sidebar">
                 <!-- Tracks Section -->
                 <div class="sidebar-section">
                     <nav class="sidebar-nav">
@@ -48,179 +90,155 @@
                         </button>
                     </nav>
                 </div>
+            </aside>
 
-                <!-- Devices Section -->
-                <div class="sidebar-section">
-                    <div class="devices-list">
-                        <button class="device-item" :class="{ active: selectedConnection === '' }"
-                            @click="selectDevice('')" title="All Devices">
-                            <span class="nav-icon">📱</span>
-                        </button>
-                        <button v-for="conn in connections" :key="conn" class="device-item"
-                            :class="{ active: selectedConnection === conn }" @click="selectDevice(conn)" :title="conn">
-                            <span class="nav-icon">📱</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="sidebar-bottom">
-                <!-- Theme Toggle -->
-                <button class="theme-toggle" @click="toggleTheme"
-                    :title="theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'">
-                    <span v-if="theme === 'light'">🌙</span>
-                    <span v-else>☀️</span>
-                </button>
-
-                <button class="icon-btn exit-btn" @click="exitServer" title="Exit Server">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
-                        <line x1="12" y1="2" x2="12" y2="12"></line>
-                    </svg>
-                </button>
-            </div>
-        </aside>
-
-        <!-- Main Content Area -->
-        <main class="main-content">
-            <!-- Network Tab -->
-            <div v-if="activeTab === 'network'" class="tab-content">
-                <div class="content-layout">
-                    <!-- Table Container -->
-                    <div class="table-container">
-                        <div v-if="networkData.length === 0" class="empty-state">
-                            No requests captured.
-                        </div>
-
-                        <table v-else class="data-table">
-                            <thead>
-                                <tr>
-                                    <th @click="sortBy('request.requestTime')" class="col-time">
-                                        Request Time
-                                        <span v-if="sortKey === 'request.requestTime'" class="sort-icon">{{ sortIcon
-                                            }}</span>
-                                    </th>
-                                    <th @click="sortBy('response.code')" class="col-status">
-                                        Status
-                                        <span v-if="sortKey === 'response.code'" class="sort-icon">{{ sortIcon }}</span>
-                                    </th>
-                                    <th @click="sortBy('request.method')" class="col-method">
-                                        Method
-                                        <span v-if="sortKey === 'request.method'" class="sort-icon">{{ sortIcon
-                                            }}</span>
-                                    </th>
-                                    <th @click="sortBy('request.url')" class="col-url">
-                                        URL
-                                        <span v-if="sortKey === 'request.url'" class="sort-icon">{{ sortIcon }}</span>
-                                    </th>
-                                    <th @click="sortBy('response.durationMs')" class="col-duration">
-                                        Duration
-                                        <span v-if="sortKey === 'response.durationMs'" class="sort-icon">{{ sortIcon
-                                            }}</span>
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="(item, index) in sortedNetworkData" :key="item.originalIndex"
-                                    :class="{ selected: selectedRequestIndex === item.originalIndex }"
-                                    @click="selectRequest(item.originalIndex)">
-                                    <td class="col-time">{{ formatTime(item.request.requestTime) }}</td>
-                                    <td class="col-status">
-                                        <span class="status-badge" :class="getStatusClass(item.response.code)">
-                                            {{ item.response.code }}
-                                        </span>
-                                    </td>
-                                    <td class="col-method">
-                                        <span class="method-badge" :class="item.request.method.toLowerCase()">
-                                            {{ item.request.method }}
-                                        </span>
-                                    </td>
-                                    <td class="col-url">{{ item.request.url }}</td>
-                                    <td class="col-duration">{{ item.response.responseTime - item.request.requestTime
-                                        }}ms</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- Detail Panel (Right Side) -->
-                    <div class="detail-panel" :class="{ active: selectedRequestIndex !== null }">
-                        <div v-if="selectedRequest" class="detail-panel-content">
-                            <div class="detail-header">
-                                <button class="close-btn" @click="selectedRequestIndex = null" title="Close">×</button>
-                                <div class="detail-url">{{ selectedRequest.request.url }}</div>
-                                <div class="detail-meta">
-                                    <span class="method-badge" :class="selectedRequest.request.method.toLowerCase()">
-                                        {{ selectedRequest.request.method }}
-                                    </span>
-                                    <span class="status-badge" :class="getStatusClass(selectedRequest.response.code)">
-                                        {{ selectedRequest.response.code }}
-                                    </span>
-                                    <span
-                                        v-if="selectedRequest.response.responseTime && selectedRequest.request.requestTime">
-                                        {{ selectedRequest.response.responseTime - selectedRequest.request.requestTime
-                                        }}ms
-                                    </span>
-                                </div>
+            <!-- Main Content Area -->
+            <main class="main-content">
+                <!-- Network Tab -->
+                <div v-if="activeTab === 'network'" class="tab-content">
+                    <div class="content-layout">
+                        <!-- Table Container -->
+                        <div class="table-container">
+                            <div v-if="networkData.length === 0" class="empty-state">
+                                No requests captured.
                             </div>
 
-                            <div class="detail-body">
-                                <!-- Request Section -->
-                                <div class="detail-section">
-                                    <h3>Request</h3>
-                                    <div v-if="selectedRequest.request.requestTime && selectedRequest.request.requestTime > 0"
-                                        class="detail-row">
-                                        <div class="detail-label">Time</div>
-                                        <div class="detail-value">
-                                            <pre>{{ formatTime(selectedRequest.request.requestTime) }}</pre>
-                                        </div>
-                                    </div>
-                                    <div
-                                        v-if="selectedRequest.request.headers && Object.keys(selectedRequest.request.headers).length > 0">
-                                        <div class="detail-label">Headers</div>
-                                        <div class="detail-row" v-for="(val, key) in selectedRequest.request.headers"
-                                            :key="key">
-                                            <div class="detail-sublabel">{{ key }}</div>
-                                            <div class="detail-value">
-                                                <pre>{{ formatJson(Array.isArray(val) ? val.join(', ') : val) }}</pre>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div
-                                        v-if="selectedRequest.request.body && selectedRequest.request.body !== '' && selectedRequest.request.body !== null">
-                                        <div class="detail-label">Body</div>
-                                        <div class="detail-value">
-                                            <pre>{{ formatJson(selectedRequest.request.body) }}</pre>
-                                        </div>
+                            <table v-else class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th @click="sortBy('request.requestTime')" class="col-time">
+                                            Request Time
+                                            <span v-if="sortKey === 'request.requestTime'" class="sort-icon">{{ sortIcon
+                                                }}</span>
+                                        </th>
+                                        <th @click="sortBy('response.code')" class="col-status">
+                                            Status
+                                            <span v-if="sortKey === 'response.code'" class="sort-icon">{{ sortIcon
+                                                }}</span>
+                                        </th>
+                                        <th @click="sortBy('request.method')" class="col-method">
+                                            Method
+                                            <span v-if="sortKey === 'request.method'" class="sort-icon">{{ sortIcon
+                                                }}</span>
+                                        </th>
+                                        <th @click="sortBy('request.url')" class="col-url">
+                                            URL
+                                            <span v-if="sortKey === 'request.url'" class="sort-icon">{{ sortIcon
+                                                }}</span>
+                                        </th>
+                                        <th @click="sortBy('response.durationMs')" class="col-duration">
+                                            Duration
+                                            <span v-if="sortKey === 'response.durationMs'" class="sort-icon">{{ sortIcon
+                                                }}</span>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="(item, index) in sortedNetworkData" :key="item.originalIndex"
+                                        :class="{ selected: selectedRequestIndex === item.originalIndex }"
+                                        @click="selectRequest(item.originalIndex)">
+                                        <td class="col-time">{{ formatTime(item.request.requestTime) }}</td>
+                                        <td class="col-status">
+                                            <span class="status-badge" :class="getStatusClass(item.response.code)">
+                                                {{ item.response.code }}
+                                            </span>
+                                        </td>
+                                        <td class="col-method">
+                                            <span class="method-badge" :class="item.request.method.toLowerCase()">
+                                                {{ item.request.method }}
+                                            </span>
+                                        </td>
+                                        <td class="col-url">{{ item.request.url }}</td>
+                                        <td class="col-duration">{{ item.response.responseTime -
+                                            item.request.requestTime
+                                            }}ms</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Detail Panel (Right Side) -->
+                        <div class="detail-panel" :class="{ active: selectedRequestIndex !== null }">
+                            <div v-if="selectedRequest" class="detail-panel-content">
+                                <div class="detail-header">
+                                    <button class="close-btn" @click="selectedRequestIndex = null"
+                                        title="Close">×</button>
+                                    <div class="detail-url">{{ selectedRequest.request.url }}</div>
+                                    <div class="detail-meta">
+                                        <span class="method-badge"
+                                            :class="selectedRequest.request.method.toLowerCase()">
+                                            {{ selectedRequest.request.method }}
+                                        </span>
+                                        <span class="status-badge"
+                                            :class="getStatusClass(selectedRequest.response.code)">
+                                            {{ selectedRequest.response.code }}
+                                        </span>
+                                        <span
+                                            v-if="selectedRequest.response.responseTime && selectedRequest.request.requestTime">
+                                            {{ selectedRequest.response.responseTime -
+                                            selectedRequest.request.requestTime
+                                            }}ms
+                                        </span>
                                     </div>
                                 </div>
 
-                                <!-- Response Section -->
-                                <div class="detail-section">
-                                    <h3>Response</h3>
-                                    <div class="detail-row">
-                                        <div class="detail-label">Protocol</div>
-                                        <div class="detail-value">
-                                            <pre>{{ formatJson(selectedRequest.response.protocol) }}</pre>
-                                        </div>
-                                    </div>
-                                    <div
-                                        v-if="selectedRequest.response.headers && Object.keys(selectedRequest.response.headers).length > 0">
-                                        <div class="detail-label">Headers</div>
-                                        <div class="detail-row" v-for="(val, key) in selectedRequest.response.headers"
-                                            :key="key">
-                                            <div class="detail-sublabel">{{ key }}</div>
+                                <div class="detail-body">
+                                    <!-- Request Section -->
+                                    <div class="detail-section">
+                                        <h3>Request</h3>
+                                        <div v-if="selectedRequest.request.requestTime && selectedRequest.request.requestTime > 0"
+                                            class="detail-row">
+                                            <div class="detail-label">Time</div>
                                             <div class="detail-value">
-                                                <pre>{{ formatJson(Array.isArray(val) ? val.join(', ') : val) }}</pre>
+                                                <pre>{{ formatTime(selectedRequest.request.requestTime) }}</pre>
+                                            </div>
+                                        </div>
+                                        <div
+                                            v-if="selectedRequest.request.headers && Object.keys(selectedRequest.request.headers).length > 0">
+                                            <div class="detail-label">Headers</div>
+                                            <div class="detail-row"
+                                                v-for="(val, key) in selectedRequest.request.headers" :key="key">
+                                                <div class="detail-sublabel">{{ key }}</div>
+                                                <div class="detail-value">
+                                                    <pre>{{ formatJson(Array.isArray(val) ? val.join(', ') : val) }}</pre>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div
+                                            v-if="selectedRequest.request.body && selectedRequest.request.body !== '' && selectedRequest.request.body !== null">
+                                            <div class="detail-label">Body</div>
+                                            <div class="detail-value">
+                                                <pre>{{ formatJson(selectedRequest.request.body) }}</pre>
                                             </div>
                                         </div>
                                     </div>
-                                    <div
-                                        v-if="selectedRequest.response.body && selectedRequest.response.body !== '' && selectedRequest.response.body !== null">
-                                        <div class="detail-label">Body</div>
-                                        <div class="detail-value">
-                                            <pre>{{ formatJson(selectedRequest.response.body) }}</pre>
+
+                                    <!-- Response Section -->
+                                    <div class="detail-section">
+                                        <h3>Response</h3>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Protocol</div>
+                                            <div class="detail-value">
+                                                <pre>{{ formatJson(selectedRequest.response.protocol) }}</pre>
+                                            </div>
+                                        </div>
+                                        <div
+                                            v-if="selectedRequest.response.headers && Object.keys(selectedRequest.response.headers).length > 0">
+                                            <div class="detail-label">Headers</div>
+                                            <div class="detail-row"
+                                                v-for="(val, key) in selectedRequest.response.headers" :key="key">
+                                                <div class="detail-sublabel">{{ key }}</div>
+                                                <div class="detail-value">
+                                                    <pre>{{ formatJson(Array.isArray(val) ? val.join(', ') : val) }}</pre>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div
+                                            v-if="selectedRequest.response.body && selectedRequest.response.body !== '' && selectedRequest.response.body !== null">
+                                            <div class="detail-label">Body</div>
+                                            <div class="detail-value">
+                                                <pre>{{ formatJson(selectedRequest.response.body) }}</pre>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -228,18 +246,18 @@
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Database Tab -->
-            <div v-if="activeTab === 'database'" class="tab-content">
-                <div class="empty-state">Database traces coming soon...</div>
-            </div>
+                <!-- Database Tab -->
+                <div v-if="activeTab === 'database'" class="tab-content">
+                    <div class="empty-state">Database traces coming soon...</div>
+                </div>
 
-            <!-- Logcat Tab -->
-            <div v-if="activeTab === 'logcat'" class="tab-content">
-                <div class="empty-state">Logcat traces coming soon...</div>
-            </div>
-        </main>
+                <!-- Logcat Tab -->
+                <div v-if="activeTab === 'logcat'" class="tab-content">
+                    <div class="empty-state">Logcat traces coming soon...</div>
+                </div>
+            </main>
+        </div>
     </div>
 
     <script src="/js/app.js"></script>

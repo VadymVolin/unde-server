@@ -29,7 +29,10 @@ createApp({
 
             // UI State
             theme: 'light',
+            // UI State
+            theme: 'light',
             selectedRequestIndex: null,
+            showDeviceDropdown: false,
 
             // Sorting
             sortKey: 'request.requestTime',
@@ -263,9 +266,14 @@ createApp({
 
             // Set the selected connection
             this.selectedConnection = connectionId;
+            this.showDeviceDropdown = false;
 
             // Always send the selection to backend to request fresh data
             this.sendConnectionSelection();
+        },
+
+        toggleDeviceDropdown() {
+            this.showDeviceDropdown = !this.showDeviceDropdown;
         },
 
         onConnectionChange() {
