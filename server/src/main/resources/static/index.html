@@ -6,6 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Unde Server Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Doto:wght@100..900&family=Fira+Code:wght@300..700&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="/css/style.css">
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 </head>
@@ -14,63 +19,66 @@
     <div id="app">
         <!-- Left Sidebar -->
         <aside class="sidebar">
-            <!-- Sidebar Header -->
-            <div class="sidebar-header">
-                <h1 class="sidebar-title">Unde</h1>
+            <div class="sidebar-top">
+                <!-- Sidebar Header -->
+                <div class="sidebar-header">
+                    <h1 class="sidebar-title">U</h1>
+                </div>
+
+                <!-- WebSocket Status -->
+                <div class="ws-status" :class="{ connected: wsConnected, disconnected: !wsConnected }"
+                    title="Connection Status">
+                    <span class="status-dot"></span>
+                </div>
+
+                <!-- Tracks Section -->
+                <div class="sidebar-section">
+                    <nav class="sidebar-nav">
+                        <button class="sidebar-nav-item" :class="{ active: activeTab === 'network' }"
+                            @click="activeTab = 'network'" title="Network Trace">
+                            <span class="nav-icon">🌐</span>
+                        </button>
+                        <button class="sidebar-nav-item" :class="{ active: activeTab === 'database' }"
+                            @click="activeTab = 'database'" title="DB Trace">
+                            <span class="nav-icon">💾</span>
+                        </button>
+                        <button class="sidebar-nav-item" :class="{ active: activeTab === 'logcat' }"
+                            @click="activeTab = 'logcat'" title="Logcat">
+                            <span class="nav-icon">📋</span>
+                        </button>
+                    </nav>
+                </div>
+
+                <!-- Devices Section -->
+                <div class="sidebar-section">
+                    <div class="devices-list">
+                        <button class="device-item" :class="{ active: selectedConnection === '' }"
+                            @click="selectDevice('')" title="All Devices">
+                            <span class="nav-icon">📱</span>
+                        </button>
+                        <button v-for="conn in connections" :key="conn" class="device-item"
+                            :class="{ active: selectedConnection === conn }" @click="selectDevice(conn)" :title="conn">
+                            <span class="nav-icon">📱</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-bottom">
+                <!-- Theme Toggle -->
+                <button class="theme-toggle" @click="toggleTheme"
+                    :title="theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'">
+                    <span v-if="theme === 'light'">🌙</span>
+                    <span v-else>☀️</span>
+                </button>
+
                 <button class="icon-btn exit-btn" @click="exitServer" title="Exit Server">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
+                        <line x1="12" y1="2" x2="12" y2="12"></line>
                     </svg>
                 </button>
-            </div>
-
-            <!-- Theme Toggle -->
-            <button class="theme-toggle" @click="toggleTheme" title="Toggle Theme">
-                <span v-if="theme === 'light'">🌙 Dark</span>
-                <span v-else>☀️ Light</span>
-            </button>
-
-            <!-- WebSocket Status -->
-            <div class="ws-status" :class="{ connected: wsConnected, disconnected: !wsConnected }">
-                <span class="status-dot"></span>
-                <span>{{ wsConnected ? 'Connected' : 'Disconnected' }}</span>
-            </div>
-
-            <!-- Tracks Section -->
-            <div class="sidebar-section">
-                <h2 class="sidebar-section-title">Tracks</h2>
-                <nav class="sidebar-nav">
-                    <button class="sidebar-nav-item" :class="{ active: activeTab === 'network' }"
-                        @click="activeTab = 'network'">
-                        <span class="nav-icon">🌐</span>
-                        Network Trace
-                    </button>
-                    <button class="sidebar-nav-item" :class="{ active: activeTab === 'database' }"
-                        @click="activeTab = 'database'">
-                        <span class="nav-icon">💾</span>
-                        DB Trace
-                    </button>
-                    <button class="sidebar-nav-item" :class="{ active: activeTab === 'logcat' }"
-                        @click="activeTab = 'logcat'">
-                        <span class="nav-icon">📋</span>
-                        Logcat
-                    </button>
-                </nav>
-            </div>
-
-            <!-- Devices Section -->
-            <div class="sidebar-section">
-                <h2 class="sidebar-section-title">Devices</h2>
-                <div class="devices-list">
-                    <button class="device-item" :class="{ active: selectedConnection === '' }"
-                        @click="selectDevice('')">
-                        <span class="device-name">All Devices</span>
-                    </button>
-                    <button v-for="conn in connections" :key="conn" class="device-item"
-                        :class="{ active: selectedConnection === conn }" @click="selectDevice(conn)">
-                        <span class="device-name">{{ conn }}</span>
-                    </button>
-                </div>
             </div>
         </aside>
 

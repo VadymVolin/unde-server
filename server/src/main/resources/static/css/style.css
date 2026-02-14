@@ -7,36 +7,36 @@
     --bg-secondary: #22222e;
     --bg-tertiary: #2a2a38;
     --bg-hover: #32323e;
-    
+
     /* Text Colors */
     --text-primary: #e8e8ea;
     --text-secondary: #9a9aa8;
     --text-tertiary: #6a6a78;
-    
+
     /* Border & Separator */
     --border-color: #3a3a48;
     --border-subtle: #2e2e3a;
-    
+
     /* Accent Colors */
     --accent-primary: #7b68ee;
     --accent-secondary: #9d8ff5;
     --accent-hover: #6a57dd;
-    
+
     /* Status Colors */
     --status-success: #4ade80;
     --status-warning: #fbbf24;
     --status-error: #f87171;
     --status-info: #60a5fa;
-    
+
     /* Method Colors */
     --method-get: #22d3ee;
     --method-post: #a78bfa;
     --method-put: #fb923c;
     --method-delete: #f87171;
     --method-patch: #fbbf24;
-    
+
     /* Sidebar */
-    --sidebar-width: 240px;
+    --sidebar-width: 60px;
     --detail-panel-width: 400px;
 }
 
@@ -45,14 +45,14 @@
     --bg-secondary: #ffffff;
     --bg-tertiary: #fafafa;
     --bg-hover: #f0f0f2;
-    
+
     --text-primary: #1a1a24;
     --text-secondary: #5a5a68;
     --text-tertiary: #8a8a98;
-    
+
     --border-color: #e0e0e8;
     --border-subtle: #ececf0;
-    
+
     --accent-primary: #6a57dd;
     --accent-secondary: #7b68ee;
     --accent-hover: #5a47cd;
@@ -68,7 +68,7 @@
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-family: 'Fira Code', 'Roboto', monospace;
     background-color: var(--bg-primary);
     color: var(--text-primary);
     height: 100vh;
@@ -94,27 +94,45 @@ body {
     border-right: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
+    justify-content: space-between;
     overflow-y: auto;
     flex-shrink: 0;
+    padding-bottom: 1rem;
+}
+
+.sidebar-top {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+.sidebar-bottom {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    gap: 0.5rem;
+    margin-top: auto;
 }
 
 .sidebar-header {
-    padding: 1rem 1.25rem;
-    border-bottom: 1px solid var(--border-subtle);
+    padding: 1rem 0;
+    border-bottom: none;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    background-color: var(--bg-secondary);
-    position: sticky;
-    top: 0;
-    z-index: 10;
+    justify-content: center;
+    background-color: transparent;
+    width: 100%;
 }
 
 .sidebar-title {
-    font-size: 1.25rem;
+    font-family: 'Doto', sans-serif;
+    font-size: 1.5rem;
     font-weight: 700;
     color: var(--text-primary);
     letter-spacing: -0.02em;
+    text-align: center;
 }
 
 .icon-btn {
@@ -138,21 +156,29 @@ body {
     color: var(--status-error);
 }
 
+.icon-btn.exit-btn {
+    width: 36px;
+    height: 36px;
+    border-color: var(--status-error);
+    color: var(--status-error);
+    margin-top: 0.5rem;
+}
+
 .theme-toggle {
-    margin: 1rem 1.25rem 0.75rem;
-    padding: 0.6rem 1rem;
-    background-color: var(--bg-tertiary);
+    margin: 0;
+    padding: 0;
+    width: 36px;
+    height: 36px;
+    background-color: transparent;
     border: 1px solid var(--border-color);
     color: var(--text-secondary);
     border-radius: 6px;
     cursor: pointer;
-    font-size: 0.8rem;
-    font-weight: 500;
-    transition: all 0.2s ease;
+    font-size: 1rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
+    transition: all 0.2s ease;
 }
 
 .theme-toggle:hover {
@@ -162,22 +188,19 @@ body {
 }
 
 .ws-status {
-    margin: 0.5rem 1.25rem 1rem;
-    padding: 0.6rem 1rem;
-    background-color: var(--bg-tertiary);
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
+    margin: 0.5rem 0;
+    padding: 0;
+    background-color: transparent;
+    border: none;
     display: flex;
     align-items: center;
-    gap: 0.6rem;
-    font-size: 0.75rem;
-    font-weight: 500;
-    color: var(--text-secondary);
+    justify-content: center;
+    width: 100%;
 }
 
 .status-dot {
-    width: 6px;
-    height: 6px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
     background: var(--text-tertiary);
     flex-shrink: 0;
@@ -194,40 +217,41 @@ body {
 
 /* Sidebar Sections */
 .sidebar-section {
-    margin: 1.5rem 0 0;
-    padding: 0 1.25rem;
+    margin: 1rem 0 0;
+    padding: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .sidebar-section-title {
-    font-size: 0.7rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--text-tertiary);
-    margin-bottom: 0.75rem;
+    display: none;
 }
 
 /* Sidebar Navigation */
 .sidebar-nav {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 0.5rem;
+    width: 100%;
+    align-items: center;
 }
 
 .sidebar-nav-item {
     background: transparent;
     border: none;
     color: var(--text-secondary);
-    padding: 0.65rem 0.85rem;
+    padding: 0;
+    width: 36px;
+    height: 36px;
     border-radius: 6px;
     cursor: pointer;
-    font-size: 0.85rem;
-    font-weight: 500;
-    text-align: left;
-    transition: all 0.15s ease;
+    font-size: 1.2rem;
     display: flex;
     align-items: center;
-    gap: 0.65rem;
+    justify-content: center;
+    transition: all 0.15s ease;
 }
 
 .sidebar-nav-item:hover {
@@ -241,7 +265,7 @@ body {
 }
 
 .nav-icon {
-    font-size: 1rem;
+    font-size: 1.2rem;
     flex-shrink: 0;
 }
 
@@ -249,28 +273,32 @@ body {
 .devices-list {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 0.5rem;
+    width: 100%;
+    align-items: center;
+    margin-top: 0.5rem;
+    border-top: 1px solid var(--border-subtle);
+    padding-top: 1rem;
 }
 
 .device-item {
     background: transparent;
-    border: 1px solid var(--border-subtle);
+    border: 1px solid transparent;
     color: var(--text-secondary);
-    padding: 0.6rem 0.85rem;
+    padding: 0;
+    width: 36px;
+    height: 36px;
     border-radius: 6px;
     cursor: pointer;
-    font-size: 0.8rem;
-    font-weight: 500;
-    text-align: left;
-    transition: all 0.15s ease;
+    font-size: 1.2rem;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
+    transition: all 0.15s ease;
 }
 
 .device-item:hover {
     background-color: var(--bg-hover);
-    border-color: var(--border-color);
     color: var(--text-primary);
 }
 
@@ -281,9 +309,7 @@ body {
 }
 
 .device-name {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    display: none;
 }
 
 /* ========================================
@@ -357,6 +383,11 @@ body {
     user-select: none;
     white-space: nowrap;
     transition: all 0.15s ease;
+    border-right: 1px solid var(--border-subtle);
+}
+
+.data-table th:last-child {
+    border-right: none;
 }
 
 .data-table th:hover {
@@ -390,13 +421,17 @@ body {
     padding: 0.75rem 1rem;
     color: var(--text-secondary);
     font-size: 0.8rem;
+    border-right: 1px solid var(--border-subtle);
+}
+
+.data-table td:last-child {
+    border-right: none;
 }
 
 /* Table Columns */
 .col-time {
     width: 140px;
     color: var(--text-tertiary);
-    font-family: 'Courier New', 'Consolas', monospace;
     font-size: 0.75rem;
 }
 
@@ -414,7 +449,6 @@ body {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    font-family: 'Courier New', 'Consolas', monospace;
     color: var(--text-primary);
     font-size: 0.8rem;
 }
@@ -423,7 +457,6 @@ body {
     width: 100px;
     text-align: right;
     color: var(--text-tertiary);
-    font-family: 'Courier New', 'Consolas', monospace;
     font-size: 0.75rem;
 }
 
@@ -603,7 +636,6 @@ body {
     padding: 0.65rem 0.85rem;
     border-radius: 4px;
     border: 1px solid var(--border-subtle);
-    font-family: 'Courier New', 'Consolas', monospace;
     font-size: 0.75rem;
     color: var(--text-secondary);
     overflow-x: auto;
@@ -652,7 +684,7 @@ body {
         --sidebar-width: 60px;
         --detail-panel-width: 100%;
     }
-    
+
     .sidebar-title,
     .sidebar-section-title,
     .theme-toggle span,
@@ -660,12 +692,12 @@ body {
     .device-name {
         display: none;
     }
-    
+
     .sidebar-nav-item {
         justify-content: center;
         padding: 0.75rem;
     }
-    
+
     .detail-panel {
         position: absolute;
         top: 0;
@@ -674,7 +706,7 @@ body {
         z-index: 20;
         box-shadow: -4px 0 12px rgba(0, 0, 0, 0.3);
     }
-    
+
     .col-time,
     .col-duration {
         display: none;
