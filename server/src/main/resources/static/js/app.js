@@ -29,10 +29,17 @@ createApp({
 
             // UI State
             theme: 'light',
+            // UI State
+            theme: 'light',
             selectedRequestIndex: null,
+            showDeviceDropdown: false,
+
+            // Resizing
+            isResizing: false,
+            detailPanelWidth: 400, // Default width
 
             // Sorting
-            sortKey: 'request.timestamp',
+            sortKey: 'request.requestTime',
             sortOrder: 'desc'
         };
     },
@@ -257,6 +264,47 @@ createApp({
             }
         },
 
+        selectDevice(connectionId) {
+            // Always clear data first to ensure fresh state
+            this.clearAllData();
+
+            // Set the selected connection
+            this.selectedConnection = connectionId;
+            this.showDeviceDropdown = false;
+
+            // Always send the selection to backend to request fresh data
+            this.sendConnectionSelection();
+        },
+
+        toggleDeviceDropdown() {
+            this.showDeviceDropdown = !this.showDeviceDropdown;
+        },
+
+        // --- Resizing Logic ---
+        startResize(event) {
+            this.isResizing = true;
+            document.addEventListener('mousemove', this.resize);
+            document.addEventListener('mouseup', this.stopResize);
+            document.body.style.userSelect = 'none'; // Prevent text selection while resizing
+        },
+
+        stopResize() {
+            this.isResizing = false;
+            document.removeEventListener('mousemove', this.resize);
+            document.removeEventListener('mouseup', this.stopResize);
+            document.body.style.userSelect = '';
+        },
+
+        resize(event) {
+            if (this.isResizing) {
+                const newWidth = window.innerWidth - event.clientX;
+                // specific limits
+                if (newWidth > 300 && newWidth < 800) {
+                    this.detailPanelWidth = newWidth;
+                }
+            }
+        },
+
         onConnectionChange() {
             this.clearAllData();
             this.sendConnectionSelection();
@@ -300,7 +348,7 @@ createApp({
                 if (typeof body === 'string' && (body.startsWith('{') || body.startsWith('['))) {
                     return JSON.stringify(JSON.parse(body), null, 4);
                 }
-                return typeof body === 'object' ? JSON.stringify(JSON.parse(body), null, 4) :  JSON.stringify(JSON.parse(body), null, 4);
+                return typeof body === 'object' ? JSON.stringify(JSON.parse(body), null, 4) : JSON.stringify(JSON.parse(body), null, 4);
             } catch (e) {
                 return body;
             }

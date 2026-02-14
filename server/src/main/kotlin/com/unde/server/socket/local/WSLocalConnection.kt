@@ -1,8 +1,8 @@
-package com.unde.server.socket.client
+package com.unde.server.socket.local
 
 import com.unde.server.constants.JsonToken
 import com.unde.server.socket.WSDataManager
-import com.unde.server.socket.client.model.WSLocalMessage
+import com.unde.server.socket.local.model.WSLocalMessage
 import io.ktor.server.websocket.*
 import io.ktor.util.logging.*
 import io.ktor.websocket.*
@@ -15,6 +15,17 @@ import kotlinx.serialization.json.Json
 import java.util.*
 import kotlin.coroutines.cancellation.CancellationException
 
+/**
+ * Represents a WebSocket connection with a local client (e.g., UI).
+ *
+ * This class handles:
+ * - sending network traffic updates to the client.
+ * - processing commands from the client (e.g., selecting a device to monitor).
+ * - managing the lifecycle of the WebSocket session.
+ *
+ * @property connectionId Unique identifier for this connection.
+ * @property session The WebSocket session.
+ */
 internal class WSLocalConnection(
     val connectionId: String = UUID.randomUUID().toString(),
     private val session: DefaultWebSocketServerSession
@@ -25,6 +36,12 @@ internal class WSLocalConnection(
     private var networkDataStoreJob: Job? = null
     private var connectionsDataStoreJob: Job? = null
 
+    /**
+     * Initiates the WebSocket connection handling.
+     *
+     * This method blocks until the connection is closed. It sets up observers for
+     * remote connections and processes incoming messages.
+     */
     internal suspend fun connect() = withContext(Dispatchers.Default) {
         logger.info("Client connection [$connectionId] has been established")
         try {
@@ -43,7 +60,12 @@ internal class WSLocalConnection(
         }
     }
 
-    internal suspend fun send(message: WSLocalMessage) = withContext(Dispatchers.Default) {
+    /**
+     * Sends a message to the connected local client.
+     *
+     * @param message The [WSLocalMessage] to send.
+     */
+    internal suspend fun send(message: WSLocalMessage) {
         try {
             if (session.isActive) {
                 session.send(Frame.Text(json.encodeToString(WSLocalMessage.serializer(), message)))
@@ -53,7 +75,7 @@ internal class WSLocalConnection(
         }
     }
 
-    private suspend fun handleMessage(frame: Frame) = withContext(Dispatchers.Default) {
+    private suspend fun CoroutineScope.handleMessage(frame: Frame) {
         if (frame is Frame.Text) {
             val text = frame.readText()
             val message = try {
@@ -77,6 +99,8 @@ internal class WSLocalConnection(
                     logger.warn("Unexpected message type from local client: ${message?.javaClass?.simpleName}")
                 }
             }
+        } else {
+            logger.warn("Unexpected Frame type: " + frame.javaClass.simpleName)
         }
     }
 

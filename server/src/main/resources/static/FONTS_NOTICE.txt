@@ -1,0 +1,20 @@
+OPEN SOURCE FONTS NOTICE
+
+This project uses the following open-source fonts via Google Fonts:
+
+1. Doto
+   - License: SIL Open Font License (OFL)
+   - Commercial Use: Allowed
+   - Source: https://fonts.google.com/specimen/Doto
+
+2. Fira Code
+   - License: SIL Open Font License (OFL)
+   - Commercial Use: Allowed
+   - Source: https://fonts.google.com/specimen/Fira+Code
+
+3. Roboto
+   - License: Apache License, Version 2.0
+   - Commercial Use: Allowed
+   - Source: https://fonts.google.com/specimen/Roboto
+
+These fonts are free to use in commercial products. No attribution is strictly required for web usage via CDN, but retaining this notice is recommended for local copies or redistribution.

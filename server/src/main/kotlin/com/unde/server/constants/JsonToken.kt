@@ -1,10 +1,15 @@
 package com.unde.server.constants
 
+/**
+ * JSON field names and values used in message serialization.
+ */
 internal object JsonToken {
     // type json token
     const val TYPE_TOKEN = "type"
     const val RESULT_TOKEN = "result"
+
     // values
+    const val TYPE_RESULT_TOKEN = "result"
     const val TYPE_COMMAND_TOKEN = "command"
     const val TYPE_NETWORK_TOKEN = "network"
     const val TYPE_NETWORKS_TOKEN = "networks"

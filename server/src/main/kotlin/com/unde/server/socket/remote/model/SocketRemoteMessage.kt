@@ -9,27 +9,35 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.encodeToJsonElement
 
 
+/**
+ * Messages exchanged with remote Android devices via TCP sockets.
+ */
 @Serializable
-internal sealed interface WSRemoteMessage {
+internal sealed interface SocketRemoteMessage {
+
+    @Serializable
+    @SerialName(JsonToken.TYPE_RESULT_TOKEN)
+    data class Result(val data: String) : SocketRemoteMessage
+
     @Serializable
     @SerialName(JsonToken.TYPE_COMMAND_TOKEN)
-    data class Command(val data: JsonObject) : WSRemoteMessage
+    data class Command(val data: JsonObject) : SocketRemoteMessage
 
     @Serializable
     @SerialName(JsonToken.TYPE_NETWORK_TOKEN)
-    data class Network(val data: UndeRequestResponse) : WSRemoteMessage
+    data class Network(val data: UndeRequestResponse) : SocketRemoteMessage
 
     @Serializable
     @SerialName(JsonToken.TYPE_DATABASE_TOKEN)
-    data class Database(val data: JsonObject) : WSRemoteMessage
+    data class Database(val data: JsonObject) : SocketRemoteMessage
 
     @Serializable
     @SerialName(JsonToken.TYPE_TELEMETRY_TOKEN)
-    data class Telemetry(val data: JsonObject) : WSRemoteMessage
+    data class Telemetry(val data: JsonObject) : SocketRemoteMessage
 
     @Serializable
     @SerialName(JsonToken.TYPE_LOGCAT_TOKEN)
-    data class Logcat(val data: JsonObject) : WSRemoteMessage
+    data class Logcat(val data: JsonObject) : SocketRemoteMessage
 }
 
 

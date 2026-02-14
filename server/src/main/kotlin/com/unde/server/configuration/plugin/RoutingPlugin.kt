@@ -4,11 +4,21 @@ import com.unde.server.configuration.adb.AdbManager
 import com.unde.server.configuration.router.registerRoutes
 import com.unde.server.constants.Format
 import com.unde.server.constants.Route
+import com.unde.server.socket.remote.ServerSocketConnection
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.http.content.*
 import io.ktor.server.routing.*
 
+/**
+ * Configures the application's routing and shutdown logic.
+ *
+ * This function:
+ * - Installs the [ShutDownUrl] plugin to gracefully stop the server.
+ * - Releases ADB and Socket resources on shutdown.
+ * - Sets up static content serving.
+ * - Registers specific API and Socket routes.
+ */
 internal fun Application.configureRouting() {
     install(ShutDownUrl.ApplicationCallPlugin) {
         // The URL that will be intercepted (you can also use the application.config's ktor.deployment.shutdown.url key)
@@ -16,6 +26,7 @@ internal fun Application.configureRouting() {
         // A function that will be executed to get the exit code of the process
         exitCodeSupplier = {
             AdbManager.release()
+            ServerSocketConnection.disconnect()
             println("Shutting down the JVM.")
             0
         } // ApplicationCall.() -> Int

@@ -1,68 +1,101 @@
-# unde-server
+# Unde Server
 
-This project was created using the [Ktor Project Generator](https://start.ktor.io).
-
-Here are some useful links to get you started:
-
-- [Ktor Documentation](https://ktor.io/docs/home.html)
-- [Ktor GitHub page](https://github.com/ktorio/ktor)
-- The [Ktor Slack chat](https://app.slack.com/client/T09229ZC6/C0A974TJ9). You'll need
-  to [request an invite](https://surveys.jetbrains.com/s3/kotlin-slack-sign-up) to join.
+`unde-server` is a middleware application designed to facilitate debugging and network monitoring for Android devices. It acts as a bridge between Android devices and local development tools, utilizing ADB for device management and providing real-time data streaming.
 
 ## Features
 
-Here's a list of features included in this project:
+- **ADB Device Management**: Automatically detects connected Android devices and sets up reverse port forwarding (`adb reverse`).
+- **Network Traffic Monitoring**:
+  - Receives network traffic data from Android devices via **Plain TCP Sockets**.
+  - Broadcasts network events to local clients (e.g., UI frontends) via **WebSockets**.
+- **Dual Connection Architecture**:
+  - **Remote Connection**: Handles communication with the Android device.
+  - **Local Connection**: Handles communication with local analysis/UI tools.
+- **Cross-Platform Support**: Runs on any system with JDK and ADB installed.
 
-| Name                                                                   | Description                                                                        |
-|------------------------------------------------------------------------|------------------------------------------------------------------------------------|
-| [Routing](https://start.ktor.io/p/routing)                             | Provides a structured routing DSL                                                  |
-| [Resources](https://start.ktor.io/p/resources)                         | Provides type-safe routing                                                         |
-| [Static Content](https://start.ktor.io/p/static-content)               | Serves static files from defined locations                                         |
-| [Webjars](https://start.ktor.io/p/webjars)                             | Bundles static assets into your built JAR file                                     |
-| [Call Logging](https://start.ktor.io/p/call-logging)                   | Logs client requests                                                               |
-| [Content Negotiation](https://start.ktor.io/p/content-negotiation)     | Provides automatic content conversion according to Content-Type and Accept headers |
-| [kotlinx.serialization](https://start.ktor.io/p/kotlinx-serialization) | Handles JSON serialization using kotlinx.serialization library                     |
-| [Exposed](https://start.ktor.io/p/exposed)                             | Adds Exposed database to your application                                          |
-| [WebSockets](https://start.ktor.io/p/ktor-websockets)                  | Adds WebSocket protocol support for bidirectional client connections               |
-| [Shutdown URL](https://start.ktor.io/p/shutdown-url)                   | Enables a URL that shuts down the server when accessed                             |
-| [HTML DSL](https://start.ktor.io/p/html-dsl)                           | Generates HTML from Kotlin DSL                                                     |
-| [HTMX](https://start.ktor.io/p/htmx)                                   | Includes HTMX for front-end scripting                                              |
+## Prerequisites
 
-## Structure
+Before running the server, ensure you have the following installed:
 
-This project includes the following modules:
+- **Java Development Kit (JDK)**: Version 11 or higher.
+- **Android Debug Bridge (ADB)**: Must be installed and accessible in your system's PATH.
 
-| Path             | Description                              |
-|------------------|------------------------------------------|
-| [server](server) | A runnable Ktor server implementation    |
-| [web](web)       | Front-end Kotlin scripts for the browser |
+## Architecture & Components
+
+The server is built with Ktor and follows a modular architecture:
+
+### Core Components
+
+- **`AdbManager`**: 
+  - Monitors connected Android devices.
+  - Automatically executes `adb reverse tcp:8081 tcp:8081` to allow devices to connect to the server.
+
+- **`ServerSocketConnection` (Remote)**:
+  - Listens on a TCP port (default: 8081) for incoming connections from Android devices.
+  - Receives raw data (Network, Logcat(coming soon), Database traces(coming soon)) via plain sockets.
+
+- **`WSLocalConnection` (Local)**:
+  - Manages WebSocket connections for local clients (e.g., a desktop UI or web dashboard).
+  - streams the data received from devices to the frontend for visualization.
 
 ## Building
 
-To build the project, use one of the following tasks:
+### Server Jar
 
-| Task                                            | Description                                                          |
-|-------------------------------------------------|----------------------------------------------------------------------|
-| `./gradlew build`                               | Build everything                                                     |
-| `./gradlew :server:buildFatJar`                 | Build an executable JAR of the server with all dependencies included |
-| `./gradlew :server:buildImage`                  | Build the docker image to use with the fat JAR                       |
-| `./gradlew :server:publishImageToLocalRegistry` | Publish the docker image locally                                     |
-| `./gradlew -t :web:build`                       | Build WASM scripts continuously                                      |
+To build the executable JAR file:
+
+```bash
+./gradlew :server:buildFatJar
+```
+
+### Desktop Application
+
+You can package the server as a standalone desktop application (installer or portable) using the provided scripts.
+
+#### 1. Requirements
+
+- **Linux/macOS**: Standard build tools (bash).
+- **Windows Installer**: [WiX Toolset](https://wixtoolset.org) must be installed and in your PATH.
+
+#### 2. Build Scripts
+
+**Linux / macOS:**
+
+| Type      | Command                         | Description                                      |
+|-----------|---------------------------------|--------------------------------------------------|
+| Installer | `./scripts/build-installer.sh`  | Creates a native installer (deb/rpm/pkg/dmg)     |
+| Portable  | `./scripts/build-portable.sh`   | Creates a portable executable directory          |
+
+**Windows:**
+
+| Type      | Command                          | Description                                      |
+|-----------|----------------------------------|--------------------------------------------------|
+| Installer | `.\scripts\build-installer.bat`  | Creates an .msi installer (Requires WiX Toolset) |
+| Portable  | `.\scripts\build-portable.bat`   | Creates a portable .exe directory                |
+
+#### 3. Output
+
+Build artifacts will be generated in: `server/build/jpackage/`
 
 ## Running
 
-To run the project, use one of the following tasks:
+### From Command Line
 
-| Task                                 | Description                            |
-|--------------------------------------|----------------------------------------|
-| `./gradlew :server:run`              | Run the server                         |
-| `./gradlew :server:runDocker`        | Run using the local docker image       |
-| `./gradlew -t :web:wasmJsBrowserRun` | Run scripts in a browser, without Ktor |
+To run the server directly:
 
-If the server starts successfully, you'll see the following output:
-
-```
-2024-12-04 14:32:45.584 [main] INFO  Application - Application started in 0.303 seconds.
-2024-12-04 14:32:45.682 [main] INFO  Application - Responding at http://0.0.0.0:8080
+```bash
+./gradlew :server:run
 ```
 
+### From Docker
+
+To run using the local Docker image:
+
+1. Build the image:
+    ```bash
+    ./gradlew :server:buildImage
+    ```
+2. Run the image:
+    ```bash
+    ./gradlew :server:runDocker
+    ```
