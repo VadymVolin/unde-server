@@ -158,7 +158,10 @@
                         </div>
 
                         <!-- Detail Panel (Right Side) -->
-                        <div class="detail-panel" :class="{ active: selectedRequestIndex !== null }">
+                        <div class="detail-panel"
+                            :class="{ active: selectedRequestIndex !== null, 'is-resizing': isResizing }"
+                            :style="{ width: selectedRequestIndex !== null ? detailPanelWidth + 'px' : '0' }">
+                            <div class="resizer" @mousedown="startResize"></div>
                             <div v-if="selectedRequest" class="detail-panel-content">
                                 <div class="detail-header">
                                     <button class="close-btn" @click="selectedRequestIndex = null"

@@ -568,11 +568,37 @@ body {
     transition: width 0.3s ease;
     display: flex;
     flex-direction: column;
+    position: relative;
+}
+
+.detail-panel.is-resizing {
+    transition: none;
+    user-select: none;
 }
 
 .detail-panel.active {
     width: var(--detail-panel-width);
     border-left: 1px solid var(--border-color);
+}
+
+
+
+.resizer {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 6px;
+    cursor: col-resize;
+    z-index: 100;
+    background: transparent;
+    transition: background 0.2s;
+}
+
+.resizer:hover,
+.detail-panel.is-resizing .resizer {
+    background: var(--accent-primary);
+    opacity: 0.5;
 }
 
 .detail-panel-content {

@@ -34,6 +34,10 @@ createApp({
             selectedRequestIndex: null,
             showDeviceDropdown: false,
 
+            // Resizing
+            isResizing: false,
+            detailPanelWidth: 400, // Default width
+
             // Sorting
             sortKey: 'request.requestTime',
             sortOrder: 'desc'
@@ -274,6 +278,31 @@ createApp({
 
         toggleDeviceDropdown() {
             this.showDeviceDropdown = !this.showDeviceDropdown;
+        },
+
+        // --- Resizing Logic ---
+        startResize(event) {
+            this.isResizing = true;
+            document.addEventListener('mousemove', this.resize);
+            document.addEventListener('mouseup', this.stopResize);
+            document.body.style.userSelect = 'none'; // Prevent text selection while resizing
+        },
+
+        stopResize() {
+            this.isResizing = false;
+            document.removeEventListener('mousemove', this.resize);
+            document.removeEventListener('mouseup', this.stopResize);
+            document.body.style.userSelect = '';
+        },
+
+        resize(event) {
+            if (this.isResizing) {
+                const newWidth = window.innerWidth - event.clientX;
+                // specific limits
+                if (newWidth > 300 && newWidth < 800) {
+                    this.detailPanelWidth = newWidth;
+                }
+            }
         },
 
         onConnectionChange() {
