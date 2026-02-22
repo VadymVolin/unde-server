@@ -13,15 +13,10 @@ import kotlinx.serialization.json.encodeToJsonElement
  * Messages exchanged with remote Android devices via TCP sockets.
  */
 @Serializable
-internal sealed interface SocketRemoteMessage {
-
+internal sealed interface   SocketRemoteMessage {
     @Serializable
-    @SerialName(JsonToken.TYPE_RESULT_TOKEN)
-    data class Result(val data: String) : SocketRemoteMessage
-
-    @Serializable
-    @SerialName(JsonToken.TYPE_COMMAND_TOKEN)
-    data class Command(val data: JsonObject) : SocketRemoteMessage
+    @SerialName(JsonToken.TYPE_PLAIN_TOKEN)
+    data class Plain(val data: String) : SocketRemoteMessage
 
     @Serializable
     @SerialName(JsonToken.TYPE_NETWORK_TOKEN)
@@ -39,8 +34,3 @@ internal sealed interface SocketRemoteMessage {
     @SerialName(JsonToken.TYPE_LOGCAT_TOKEN)
     data class Logcat(val data: JsonObject) : SocketRemoteMessage
 }
-
-
-internal fun createResultCommandData(data: String): JsonObject = JsonObject(
-    mapOf(JsonToken.RESULT_TOKEN to Json.encodeToJsonElement(data))
-)
