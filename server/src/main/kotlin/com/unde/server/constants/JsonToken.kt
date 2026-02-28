@@ -9,8 +9,7 @@ internal object JsonToken {
     const val RESULT_TOKEN = "result"
 
     // values
-    const val TYPE_RESULT_TOKEN = "result"
-    const val TYPE_COMMAND_TOKEN = "command"
+    const val TYPE_PLAIN_TOKEN = "plain"
     const val TYPE_NETWORK_TOKEN = "network"
     const val TYPE_NETWORKS_TOKEN = "networks"
     const val TYPE_DATABASE_TOKEN = "database"

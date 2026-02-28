@@ -16,7 +16,7 @@ import java.io.BufferedReader
  */
 object AdbManager {
 
-    private var adbDevicesJob: Job? = null
+    private var adbJob: Job? = null
 
     private val adbErrors = listOf(
         "adb: no devices/emulators found",
@@ -30,13 +30,12 @@ object AdbManager {
      * @param application The Ktor [Application] instance used to launch the coroutine.
      */
     internal fun setup(application: Application) {
-        adbDevicesJob?.cancel()
-        adbDevicesJob = application.launch(Dispatchers.IO) {
+        adbJob?.cancel()
+        adbJob = application.launch(Dispatchers.IO) {
             while (isActive) {
                 val connectedDevicesDeferred = application.async { getConnectedDevices() }
-                val reversedDevicesDeferred = application.async { getReversedDevices() }
                 ensureActive()
-                setupAdbReverse(connectedDevicesDeferred.await(), reversedDevicesDeferred.await())
+                setupAdbReverse(connectedDevicesDeferred.await())
                 delay(Time.DEFAULT_ADB_TASK_DELAY)
             }
         }
@@ -47,18 +46,18 @@ object AdbManager {
      */
     internal fun release() {
         LOGGER.info("Release manager and resources")
-        adbDevicesJob?.cancel()
-        adbDevicesJob = null
+        adbJob?.cancel()
+        adbJob = null
     }
 
-    private suspend fun getConnectedDevices(): List<String> {
+    private suspend fun getConnectedDevices(): List<String> = withContext(Dispatchers.IO) {
         currentCoroutineContext().ensureActive()
         LOGGER.info("Trying to get connected devices")
         val process = ProcessBuilder("adb", "devices", "-l").redirectErrorStream(true).start()
         currentCoroutineContext().ensureActive()
         val devices = process.inputStream.bufferedReader().useLines { lines ->
             lines.drop(1) // Skip the header "List of devices attached"
-                .filter { it.contains("device") && !it.contains("unauthorized") }
+                .filter { it.contains("device") && !it.contains("unauthorized") && !it.contains("offline") }
                 .map { line -> line.split(" ").firstOrNull { it.isNotBlank() }.orEmpty() }
                 .filter { it.isNotBlank() }.toList()
         }
@@ -67,54 +66,29 @@ object AdbManager {
         process.waitFor()
         process.destroy()
         process.destroyForcibly()
-        return devices
+        return@withContext devices
     }
 
-    private suspend fun getReversedDevices(): List<String> {
-        currentCoroutineContext().ensureActive()
-        LOGGER.info("Trying to get reversed devices")
-        val process = ProcessBuilder("adb", "reverse", "--list").redirectErrorStream(true).start()
-        currentCoroutineContext().ensureActive()
-        val devices = process.inputStream.bufferedReader().useLines { lines ->
-            lines
-                .filter { !it.contains("error:") }
-                .map { line -> line.split(" ").firstOrNull { it.isNotBlank() }.orEmpty() }
-                .filter { it.isNotBlank() }.toList()
-        }
-        currentCoroutineContext().ensureActive()
-        LOGGER.info("ADB REVERSED DEVICES: $devices")
-        process.waitFor()
-        process.destroy()
-        process.destroyForcibly()
-        return devices
-    }
-
-    private suspend fun setupAdbReverse(availableDevices: List<String> = emptyList(), reversedDevices: List<String>) {
-        val connectedDevices = availableDevices.associateWith { reversedDevices.contains(it) }.toMutableMap()
+    private suspend fun setupAdbReverse(availableDevices: List<String> = emptyList()) = withContext(Dispatchers.IO) {
         try {
-            connectedDevices.forEach { deviceToReverse ->
-                if (!deviceToReverse.value) {
-                    currentCoroutineContext().ensureActive()
-                    val process = ProcessBuilder("adb", "-s", deviceToReverse.key, "reverse", "tcp:8081", "tcp:8081")
-                        .redirectErrorStream(true)
-                        .start()
-                    LOGGER.info("Trying to setup adb reverse for device: ${deviceToReverse.key}")
-                    currentCoroutineContext().ensureActive()
-                    val result = process.inputStream.bufferedReader().use(BufferedReader::readText)
-                    currentCoroutineContext().ensureActive()
-                    if (adbErrors.contains(result)) {
-                        LOGGER.warn("ADB reverse was not installed because of [$result]")
-                        throw IllegalStateException("ADB reverse was not installed because of [$result]")
-                    }
-                    // Wait for the process to finish
-                    val exitCode = process.waitFor()
-                    if (exitCode == 0) {
-                        connectedDevices[deviceToReverse.key] = true
-                    }
-                    process.destroy()
-                    process.destroyForcibly()
-                    LOGGER.info("ADB REVERSE: \n| result: $result \n| exitCode: $exitCode")
+            availableDevices.forEach { deviceToReverse ->
+                currentCoroutineContext().ensureActive()
+                val process = ProcessBuilder("adb", "-s", deviceToReverse, "reverse", "tcp:8081", "tcp:8081")
+                    .redirectErrorStream(true)
+                    .start()
+                LOGGER.info("Trying to setup adb reverse for device: $deviceToReverse")
+                currentCoroutineContext().ensureActive()
+                val result = process.inputStream.bufferedReader().use(BufferedReader::readText)
+                currentCoroutineContext().ensureActive()
+                if (adbErrors.contains(result)) {
+                    LOGGER.warn("ADB reverse was not installed because of [$result]")
+                    throw IllegalStateException("ADB reverse was not installed because of [$result]")
                 }
+                // Wait for the process to finish
+                val exitCode = process.waitFor()
+                process.destroy()
+                process.destroyForcibly()
+                LOGGER.info("ADB REVERSE result: $result | exitCode: $exitCode")
             }
         } catch (e: Exception) {
             LOGGER.warn("ADB reverse cannot be configured because of [${e.stackTrace}]")

@@ -7,10 +7,21 @@ import io.ktor.network.selector.*
 import io.ktor.network.sockets.*
 import io.ktor.util.logging.*
 import io.ktor.utils.io.*
+import io.ktor.utils.io.core.buildPacket
+import io.ktor.utils.io.core.remaining
+import io.ktor.utils.io.streams.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineScope
+import kotlinx.io.EOFException
+import kotlinx.io.asOutputStream
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.decodeFromStream
+import kotlinx.serialization.json.encodeToStream
+import java.util.zip.GZIPInputStream
+import java.util.zip.GZIPOutputStream
+import kotlin.io.use
 
 /**
  * Manages the raw TCP socket server for device connections.
@@ -82,26 +93,20 @@ internal object ServerSocketConnection {
         }
     }
 
-    private fun listenSocketById(clientId: String, client: Socket) {
+    private fun listenSocketById(clientId: String, client: Socket) =
         client.launch {
             val readChannel = client.openReadChannel()
             val writeChannel = client.openWriteChannel(true)
             while (!client.isClosed && !readChannel.isClosedForRead) {
                 logger.info("Listen for a new message: ")
                 try {
-                    val dataSize = readChannel.readUTF8Line()?.toInt() ?: throw SocketDataException()
-                    val byteArray = ByteArray(dataSize)
-                    ensureActive()
-                    readChannel.readFully(byteArray)
-                    ensureActive()
-                    val data = byteArray.decodeToString()
-                    handleReceivedData(clientId, data)
-//                    send(client, writeChannel, SocketRemoteMessage.Result(dataSize.toString()))
+                    val data = readChannel.readFramedJsonSafe(true)
+                    handleReceivedData(client, writeChannel, clientId, data)
                 } catch (e: Exception) {
                     when (e) {
                         is CancellationException -> throw e
-                        is SocketDataException -> {
-                            logger.error("Failed to read data from client $clientId, data is null, start disconnection", e)
+                        is SocketDataException, is EOFException, is ClosedByteChannelException -> {
+                            logger.error("Failed to read data from client $clientId, data is null or channel closed by client, start disconnection", e)
                             disconnectClientById(clientId)
                         }
                         else -> {
@@ -111,13 +116,12 @@ internal object ServerSocketConnection {
                 }
             }
         }
-    }
 
-    private fun send(client: Socket, writeChannel: ByteWriteChannel, message: SocketRemoteMessage) {
+    private fun send(client: Socket, writeChannel: ByteWriteChannel, message: SocketRemoteMessage) =
         client.launch {
             try {
                 val encodedJsonString = json.encodeToString(message)
-                writeChannel.writeStringUtf8(encodedJsonString)
+                writeChannel.writeFramedJsonSafe(message, true)
                 logger.info("Sent message[${message.javaClass.simpleName}]: $encodedJsonString")
             } catch (e: Exception) {
                 if (e is CancellationException) throw e
@@ -125,42 +129,43 @@ internal object ServerSocketConnection {
             }
         }
 
-    }
-
-    private fun handleReceivedData(clientId: String, data: String) {
-        try {
-            val message = json.decodeFromString<SocketRemoteMessage>(data)
-            logger.info("Message from client[$clientId] has been received: $data")
-            when (message) {
-                is SocketRemoteMessage.Command -> {
-                    logger.info("Received COMMAND message: ${message.data}")
-                }
-
-                is SocketRemoteMessage.Network -> {
-                    logger.info("Received NETWORK message: ${message.data}")
-                    WSDataManager.addNetworkMessage(clientId, message)
-                }
-
-                is SocketRemoteMessage.Telemetry -> {
-                    logger.info("Received TELEMETRY message: ${message.data}")
-//                        WSDataManager.addTelemetry(remoteId, message)
-                }
-
-                is SocketRemoteMessage.Logcat -> {
-                    logger.info("Received LOGCAT message: ${message.data}")
-//                        WSDataManager.addLogcatTrace(remoteId, message)
-                }
-
-                is SocketRemoteMessage.Database -> {
-                    logger.info("Received DATABASE message: ${message.data}")
-//                        WSDataManager.addDatabaseTrace(remoteId, message)
-                }
-
-                else -> logger.error("Unhandled message: ${message.javaClass.simpleName} - $message")
+    private fun handleReceivedData(
+        client: Socket,
+        writeChannel: ByteWriteChannel,
+        clientId: String,
+        message: SocketRemoteMessage
+    ) = try {
+        logger.info("Message from client[$clientId] has been received: ${message.javaClass.simpleName}")
+        when (message) {
+            is SocketRemoteMessage.Plain -> {
+                logger.info("Received PLAIN message: ${message.data}")
+                if (message.data == "Ping") {
+                    send(client, writeChannel, SocketRemoteMessage.Plain("Pong"))
+                } else {}
             }
-        } catch (e: Exception) {
-            logger.error("Failed to parse message: ", e)
+
+            is SocketRemoteMessage.Network -> {
+                logger.info("Received NETWORK message: ${message.data}")
+                WSDataManager.addNetworkMessage(clientId, message)
+            }
+
+            is SocketRemoteMessage.Telemetry -> {
+                logger.info("Received TELEMETRY message: ${message.data}")
+//                        WSDataManager.addTelemetry(remoteId, message)
+            }
+
+            is SocketRemoteMessage.Logcat -> {
+                logger.info("Received LOGCAT message: ${message.data}")
+//                        WSDataManager.addLogcatTrace(remoteId, message)
+            }
+
+            is SocketRemoteMessage.Database -> {
+                logger.info("Received DATABASE message: ${message.data}")
+//                        WSDataManager.addDatabaseTrace(remoteId, message)
+            }
         }
+    } catch (e: Exception) {
+        logger.error("Failed to parse message: ", e)
     }
 
     private fun disconnectClientById(socketId: String) {
@@ -177,4 +182,52 @@ internal object ServerSocketConnection {
     }
 
     private class SocketDataException : IllegalArgumentException("Cannot read message, data is null")
+
+    @OptIn(ExperimentalSerializationApi::class)
+    suspend fun ByteWriteChannel.writeFramedJsonSafe(data: SocketRemoteMessage, compress: Boolean) {
+        val packet = buildPacket {
+            if (compress) {
+                val gzip = GZIPOutputStream(asOutputStream())
+                gzip.use {
+                    json.encodeToStream(SocketRemoteMessage.serializer(), data, it)
+                    gzip.finish()
+                }
+            } else {
+                asOutputStream().use {
+                    json.encodeToStream(SocketRemoteMessage.serializer(), data, it)
+                }
+            }
+        }
+        val size = packet.remaining
+        require(size >= 0) { "Negative frame size" }
+        writeLong(size)
+        writePacket(packet)
+        flush()
+    }
+
+    @OptIn(ExperimentalSerializationApi::class)
+    suspend fun ByteReadChannel.readFramedJsonSafe(
+        decompress: Boolean,
+        maxFrameSize: Long = 50L * 1024 * 1024 // 50MB safety limit
+    ): SocketRemoteMessage {
+        val size = readLong()
+        if (size !in 1..maxFrameSize) {
+            throw IllegalStateException("Invalid frame size: $size")
+        }
+
+        val packet = readPacket(size.toInt())
+
+        val stream = if (decompress) {
+            GZIPInputStream(packet.inputStream())
+        } else {
+            packet.inputStream()
+        }
+        return try {
+            stream.use {
+                json.decodeFromStream(SocketRemoteMessage.serializer(), it)
+            }
+        } catch (e: SerializationException) {
+            throw IllegalStateException("Corrupted JSON frame", e)
+        }
+    }
 }
