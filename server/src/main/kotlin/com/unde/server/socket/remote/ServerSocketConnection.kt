@@ -9,10 +9,10 @@ import io.ktor.util.logging.*
 import io.ktor.utils.io.*
 import io.ktor.utils.io.core.buildPacket
 import io.ktor.utils.io.core.remaining
-import io.ktor.utils.io.streams.inputStream
+import io.ktor.utils.io.streams.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineScope
+import kotlinx.io.EOFException
 import kotlinx.io.asOutputStream
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerializationException
@@ -21,6 +21,7 @@ import kotlinx.serialization.json.decodeFromStream
 import kotlinx.serialization.json.encodeToStream
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
+import kotlin.io.use
 
 /**
  * Manages the raw TCP socket server for device connections.
@@ -104,8 +105,8 @@ internal object ServerSocketConnection {
                 } catch (e: Exception) {
                     when (e) {
                         is CancellationException -> throw e
-                        is SocketDataException -> {
-                            logger.error("Failed to read data from client $clientId, data is null, start disconnection", e)
+                        is SocketDataException, is EOFException, is ClosedByteChannelException -> {
+                            logger.error("Failed to read data from client $clientId, data is null or channel closed by client, start disconnection", e)
                             disconnectClientById(clientId)
                         }
                         else -> {
