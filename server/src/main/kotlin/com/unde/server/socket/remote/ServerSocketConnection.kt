@@ -1,6 +1,7 @@
 package com.unde.server.socket.remote
 
 import com.unde.server.constants.JsonToken
+import com.unde.server.socket.remote.session.SessionRegistry
 import com.unde.server.socket.WSDataManager
 import com.unde.server.socket.remote.model.SocketRemoteMessage
 import io.ktor.network.selector.*
@@ -63,7 +64,6 @@ internal object ServerSocketConnection {
                         with(ss.accept()) {
                             socketId = remoteAddress.toString()
                             sockets[socketId] = this
-                            WSDataManager.addRemoteConnection(socketId)
                             logger.info("Accepted connection to client socket: $socketId")
                             listenSocketById(socketId, this)
                         }
@@ -93,24 +93,83 @@ internal object ServerSocketConnection {
         }
     }
 
-    private fun listenSocketById(clientId: String, client: Socket) =
+    private fun listenSocketById(tempId: String, client: Socket) =
         client.launch {
             val readChannel = client.openReadChannel()
             val writeChannel = client.openWriteChannel(true)
+            
+            var isHandshakeDone = false
+            var sessionId = ""
+            var clientId = ""
+
             while (!client.isClosed && !readChannel.isClosedForRead) {
                 logger.info("Listen for a new message: ")
                 try {
                     val data = readChannel.readFramedJsonSafe(true)
-                    handleReceivedData(client, writeChannel, clientId, data)
+                    
+                    if (!isHandshakeDone) {
+                        when (data) {
+                            is SocketRemoteMessage.SessionInit -> {
+                                clientId = data.clientId
+                                sessionId = SessionRegistry.createSession(clientId)
+                                isHandshakeDone = true
+                                
+                                sockets.remove(tempId)
+                                sockets[sessionId] = client
+                                WSDataManager.addRemoteConnection(sessionId)
+                                
+                                send(client, writeChannel, SocketRemoteMessage.SessionAck(sessionId, false))
+                            }
+                            is SocketRemoteMessage.SessionResume -> {
+                                clientId = data.clientId
+                                val reqSessionId = data.sessionId
+                                if (SessionRegistry.resumeSession(clientId, reqSessionId)) {
+                                    sessionId = reqSessionId
+                                    isHandshakeDone = true
+
+                                    sockets.remove(tempId)
+                                    sockets[sessionId] = client
+                                    // Data is already there in WSDataManager for this sessionId
+                                    // But we might need to announce it's back online:
+                                    // Wait, the UI relies on _remoteConnections to show it.
+                                    // Let's re-add it to remoteConnections if it was removed.
+                                    // Actually, we shouldn't have removed it in the first place, but if we did, addRemoteConnection would wipe it? 
+                                    // Wait, WSDataManager.addRemoteConnection creates a NEW WSConnectionDataStore which clears data!
+                                    // So we must NOT call addRemoteConnection if we want to keep data.
+                                    // For now, if the session was kept alive, the data store is still there, and it's still in remoteConnections!
+                                    // We just send Ack.
+                                    send(client, writeChannel, SocketRemoteMessage.SessionAck(sessionId, true))
+                                } else {
+                                    // Treat as new
+                                    sessionId = SessionRegistry.createSession(clientId)
+                                    isHandshakeDone = true
+                                    
+                                    sockets.remove(tempId)
+                                    sockets[sessionId] = client
+                                    WSDataManager.addRemoteConnection(sessionId)
+                                    
+                                    send(client, writeChannel, SocketRemoteMessage.SessionAck(sessionId, false))
+                                }
+                            }
+                            else -> {
+                                logger.error("Protocol violation: first message must be SessionInit or SessionResume")
+                                disconnectClientById(tempId)
+                                return@launch
+                            }
+                        }
+                    } else {
+                        handleReceivedData(client, writeChannel, sessionId, data)
+                    }
                 } catch (e: Exception) {
+                    val disconnectId = if (isHandshakeDone) sessionId else tempId
                     when (e) {
                         is CancellationException -> throw e
                         is SocketDataException, is EOFException, is ClosedByteChannelException -> {
-                            logger.error("Failed to read data from client $clientId, data is null or channel closed by client, start disconnection", e)
-                            disconnectClientById(clientId)
+                            logger.error("Failed to read data from client $disconnectId, data is null or channel closed by client, start disconnection", e)
+                            disconnectClientById(disconnectId)
                         }
                         else -> {
-                            logger.error("Failed to read data from client $clientId", e)
+                            logger.error("Failed to read data from client $disconnectId", e)
                         }
                     }
                 }
@@ -163,6 +222,12 @@ internal object ServerSocketConnection {
                 logger.info("Received DATABASE message: ${message.data}")
 //                        WSDataManager.addDatabaseTrace(remoteId, message)
             }
+            
+            is SocketRemoteMessage.SessionInit,
+            is SocketRemoteMessage.SessionResume,
+            is SocketRemoteMessage.SessionAck -> {
+                logger.warn("Received unexpected session message after handshake: $message")
+            }
         }
     } catch (e: Exception) {
         logger.error("Failed to parse message: ", e)
@@ -171,7 +236,11 @@ internal object ServerSocketConnection {
     private fun disconnectClientById(socketId: String) {
         with(sockets.remove(socketId) ?: return) {
             try {
-                WSDataManager.removeRemoteConnection(socketId)
+                if (SessionRegistry.getClientId(socketId) != null) {
+                    SessionRegistry.markSessionOffline(socketId)
+                }
+                // We do NOT remove from WSDataManager immediately so data persists for resume.
+                // Cleanup manager will handle real removal.
                 cancel()
                 dispose()
                 logger.info("Client socket[$socketId] disconnected")

@@ -38,11 +38,8 @@ internal object WSDataManager {
         logger.info("Remove remote connection: $remoteClientId")
         _remoteConnections.update { it - remoteClientId }
         _wsRemoteData.update {
-            it.apply {
-                // TODO: FUTURE - Do we need to clear the data when device is disconnected?
-                //  What if user wants to see network data later?
-                it[remoteClientId]?.clear()
-                it - remoteClientId
+            it.toMutableMap().apply {
+                this - remoteClientId
             }
         }
     }
