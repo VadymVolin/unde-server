@@ -5,6 +5,7 @@ import com.unde.server.configuration.router.registerRoutes
 import com.unde.server.constants.Format
 import com.unde.server.constants.Route
 import com.unde.server.socket.remote.ServerSocketConnection
+import com.unde.server.socket.remote.session.SessionCleanupManager
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.http.content.*
@@ -27,6 +28,7 @@ internal fun Application.configureRouting() {
         exitCodeSupplier = {
             AdbManager.release()
             ServerSocketConnection.disconnect()
+            SessionCleanupManager.stop()
             println("Shutting down the JVM.")
             0
         } // ApplicationCall.() -> Int

@@ -1,6 +1,7 @@
 package com.unde.server.socket.remote
 
 import com.unde.server.constants.JsonToken
+import com.unde.server.constants.SocketConstants
 import com.unde.server.socket.remote.session.SessionRegistry
 import com.unde.server.socket.WSDataManager
 import com.unde.server.socket.remote.model.SocketRemoteMessage
@@ -20,6 +21,7 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 import kotlinx.serialization.json.encodeToStream
+import java.util.concurrent.ConcurrentHashMap
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
 import kotlin.io.use
@@ -44,7 +46,7 @@ internal object ServerSocketConnection {
     private val selectorManager = SelectorManager(Dispatchers.IO)
     private var socketScope: CoroutineScope? = null
     private var serverSocket: ServerSocket? = null
-    private val sockets = mutableMapOf<String, Socket>()
+    private val sockets = ConcurrentHashMap<String, Socket>()
 
     /**
      * Starts the TCP server and listens for incoming connections.
@@ -99,6 +101,7 @@ internal object ServerSocketConnection {
             val writeChannel = client.openWriteChannel(true)
             
             var isHandshakeDone = false
+            var isResumeSession = false
             var sessionId = ""
             var clientId = ""
 
@@ -112,43 +115,19 @@ internal object ServerSocketConnection {
                             is SocketRemoteMessage.SessionInit -> {
                                 clientId = data.clientId
                                 sessionId = SessionRegistry.createSession(clientId)
-                                isHandshakeDone = true
-                                
-                                sockets.remove(tempId)
-                                sockets[sessionId] = client
-                                WSDataManager.addRemoteConnection(sessionId)
-                                
-                                send(client, writeChannel, SocketRemoteMessage.SessionAck(sessionId, false))
+                                logger.info("New session connected: $sessionId")
                             }
                             is SocketRemoteMessage.SessionResume -> {
                                 clientId = data.clientId
                                 val reqSessionId = data.sessionId
                                 if (SessionRegistry.resumeSession(clientId, reqSessionId)) {
                                     sessionId = reqSessionId
-                                    isHandshakeDone = true
-
-                                    sockets.remove(tempId)
-                                    sockets[sessionId] = client
-                                    // Data is already there in WSDataManager for this sessionId
-                                    // But we might need to announce it's back online:
-                                    // Wait, the UI relies on _remoteConnections to show it.
-                                    // Let's re-add it to remoteConnections if it was removed.
-                                    // Actually, we shouldn't have removed it in the first place, but if we did, addRemoteConnection would wipe it? 
-                                    // Wait, WSDataManager.addRemoteConnection creates a NEW WSConnectionDataStore which clears data!
-                                    // So we must NOT call addRemoteConnection if we want to keep data.
-                                    // For now, if the session was kept alive, the data store is still there, and it's still in remoteConnections!
-                                    // We just send Ack.
-                                    send(client, writeChannel, SocketRemoteMessage.SessionAck(sessionId, true))
+                                    isResumeSession = true
+                                    logger.info("Resume session for client $sessionId")
                                 } else {
                                     // Treat as new
                                     sessionId = SessionRegistry.createSession(clientId)
-                                    isHandshakeDone = true
-                                    
-                                    sockets.remove(tempId)
-                                    sockets[sessionId] = client
-                                    WSDataManager.addRemoteConnection(sessionId)
-                                    
-                                    send(client, writeChannel, SocketRemoteMessage.SessionAck(sessionId, false))
+                                    logger.info("Resume session not found, create a new one: $sessionId")
                                 }
                             }
                             else -> {
@@ -157,6 +136,13 @@ internal object ServerSocketConnection {
                                 return@launch
                             }
                         }
+                        isHandshakeDone = true
+                        sockets.remove(tempId)
+                        sockets[sessionId] = client
+                        if (!isResumeSession) {
+                            WSDataManager.addRemoteConnection(sessionId)
+                        }
+                        send(client, writeChannel, SocketRemoteMessage.SessionAck(sessionId, isResumeSession))
                     } else {
                         handleReceivedData(client, writeChannel, sessionId, data)
                     }
@@ -253,7 +239,7 @@ internal object ServerSocketConnection {
     private class SocketDataException : IllegalArgumentException("Cannot read message, data is null")
 
     @OptIn(ExperimentalSerializationApi::class)
-    suspend fun ByteWriteChannel.writeFramedJsonSafe(data: SocketRemoteMessage, compress: Boolean) {
+    private suspend fun ByteWriteChannel.writeFramedJsonSafe(data: SocketRemoteMessage, compress: Boolean) {
         val packet = buildPacket {
             if (compress) {
                 val gzip = GZIPOutputStream(asOutputStream())
@@ -275,10 +261,10 @@ internal object ServerSocketConnection {
     }
 
     @OptIn(ExperimentalSerializationApi::class)
-    suspend fun ByteReadChannel.readFramedJsonSafe(
+    private suspend fun ByteReadChannel.readFramedJsonSafe(
         decompress: Boolean,
-        maxFrameSize: Long = 50L * 1024 * 1024 // 50MB safety limit
-    ): SocketRemoteMessage {
+        maxFrameSize: Long = SocketConstants.DEFAULT_MAX_FRAME_SIZE
+    ): SocketRemoteMessage = withContext(Dispatchers.IO) {
         val size = readLong()
         if (size !in 1..maxFrameSize) {
             throw IllegalStateException("Invalid frame size: $size")
@@ -291,7 +277,7 @@ internal object ServerSocketConnection {
         } else {
             packet.inputStream()
         }
-        return try {
+        try {
             stream.use {
                 json.decodeFromStream(SocketRemoteMessage.serializer(), it)
             }

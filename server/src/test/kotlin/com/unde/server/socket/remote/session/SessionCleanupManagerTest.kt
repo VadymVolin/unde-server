@@ -1,6 +1,6 @@
 package com.unde.server.socket.remote.session
 
-import kotlinx.coroutines.delay
+import com.unde.server.constants.SocketConstants
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Test
@@ -27,13 +27,13 @@ class SessionCleanupManagerTest {
 
         // Use reflection to fake the offline timestamp to 31 minutes ago
         // so it exceeds SocketConstants.DEFAULT_STALE_SESSION_THRESHOLD_MS (30 minutes)
-        val field = com.unde.server.socket.remote.session.SessionRegistry::class.java.getDeclaredField("offlineTimestamps")
+        val field = SessionRegistry::class.java.getDeclaredField("offlineTimestamps")
         field.isAccessible = true
         @Suppress("UNCHECKED_CAST")
-        val timestamps = field.get(com.unde.server.socket.remote.session.SessionRegistry) as java.util.concurrent.ConcurrentHashMap<String, Long>
+        val timestamps = field.get(SessionRegistry) as java.util.concurrent.ConcurrentHashMap<String, Long>
         timestamps[staleSessionId] = System.currentTimeMillis() - (31L * 60 * 1000)
 
-        val staleBeforeSweep = SessionRegistry.getStaleSessions(com.unde.server.constants.SocketConstants.DEFAULT_STALE_SESSION_THRESHOLD_MS)
+        val staleBeforeSweep = SessionRegistry.getStaleSessions(SocketConstants.DEFAULT_STALE_SESSION_THRESHOLD_MS)
         assertEquals(1, staleBeforeSweep.size)
         assertEquals(staleSessionId, staleBeforeSweep.first())
 

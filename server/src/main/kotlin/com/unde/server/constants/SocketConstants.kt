@@ -9,4 +9,5 @@ internal object SocketConstants {
     
     internal const val DEFAULT_CLEANUP_INTERVAL_MS = 30L * 60 * 1000 // 30 minutes
     internal const val DEFAULT_STALE_SESSION_THRESHOLD_MS = 30L * 60 * 1000 // 30 minutes
+    internal const val DEFAULT_MAX_FRAME_SIZE = 50L * 1024 * 1024 // 50MB safety limit
 }

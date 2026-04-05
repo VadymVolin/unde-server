@@ -29,8 +29,6 @@ createApp({
 
             // UI State
             theme: 'light',
-            // UI State
-            theme: 'light',
             selectedRequestIndex: null,
             showDeviceDropdown: false,
 
@@ -40,7 +38,7 @@ createApp({
 
             // Sorting
             sortKey: 'request.requestTime',
-            sortOrder: 'desc'
+            sortOrder: 'asc'
         };
     },
     computed: {
