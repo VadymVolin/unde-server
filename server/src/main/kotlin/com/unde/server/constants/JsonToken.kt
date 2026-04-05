@@ -18,8 +18,7 @@ internal object JsonToken {
     const val TYPE_CONNECTIONS_LIST_TOKEN = "connections_list"
     const val TYPE_SELECT_CONNECTION_TOKEN = "select_connection"
 
-    const val TYPE_SESSION_INIT_TOKEN = "session_init"
-    const val TYPE_SESSION_RESUME_TOKEN = "session_resume"
+    const val TYPE_SESSION_AUTH_TOKEN = "session_auth"
     const val TYPE_SESSION_ACK_TOKEN = "session_ack"
 
     // next...

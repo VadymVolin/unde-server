@@ -23,6 +23,8 @@ internal object WSDataManager {
 
     private val _wsRemoteData = MutableStateFlow<Map<String, WSConnectionDataStore>>(emptyMap())
 
+    fun hasRemoteConnection(remoteClientId: String): Boolean = remoteConnections.value.contains(remoteClientId)
+
     /**
      * Registers a new remote device connection.
      *

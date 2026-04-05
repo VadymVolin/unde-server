@@ -35,14 +35,10 @@ internal sealed interface   SocketRemoteMessage {
     data class Logcat(val data: JsonObject) : SocketRemoteMessage
 
     @Serializable
-    @SerialName(JsonToken.TYPE_SESSION_INIT_TOKEN)
-    data class SessionInit(val clientId: String) : SocketRemoteMessage
-
-    @Serializable
-    @SerialName(JsonToken.TYPE_SESSION_RESUME_TOKEN)
-    data class SessionResume(val clientId: String, val sessionId: String) : SocketRemoteMessage
+    @SerialName(JsonToken.TYPE_SESSION_AUTH_TOKEN)
+    data class SessionAuth(val sessionId: String) : SocketRemoteMessage
 
     @Serializable
     @SerialName(JsonToken.TYPE_SESSION_ACK_TOKEN)
-    data class SessionAck(val sessionId: String, val resumed: Boolean) : SocketRemoteMessage
+    data class SessionAck(val resumed: Boolean) : SocketRemoteMessage
 }
